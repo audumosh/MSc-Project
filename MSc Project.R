@@ -21,9 +21,9 @@ PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
 
 ### Research question 1: What were the primary sources of funding for COVID-19 research conducted in the PAHO region?
 
-## Descriptive and statiscal analysis of COVID-19 research funding sources
+## Descriptive and statistical analysis of COVID-19 research funding sources
 
-# Number of research projects funded, number of countries where funded projects are being conducted and total amount mapped to funders
+# Number of research projects funded, number of countries where projects are being conducted and total amount mapped to funders
 
 result_1 <- PAHO_COVID_Projects %>%
   # Split the 'Country/ countries research are being conducted' into multiple rows
