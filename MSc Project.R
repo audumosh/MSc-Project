@@ -30,15 +30,17 @@ result <- PAHO_COVID_Projects %>%
   group_by(Funders) %>%
   summarise(
     Total_Projects = n(),
-    Countries_funded = count_unique_countries
-    (`Country/.countries.research.is.being.conducted_1`, 
-      `Country/.countries.research.is.being.conducted_2`,
-      `Country/.countries.research.is.being.conducted_3`,
-      `Country/.countries.research.is.being.conducted_4`,
-      `Country/.countries.research.is.being.conducted_5`,
-      `Country/.countries.research.is.being.conducted_6`,
-      `Country/.countries.research.is.being.conducted_7`),
     Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE)
     )
 
 
+
+# Split the 'Country/ countries research is being conducted' into multiple rows
+PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
+  separate_rows(`Country/.countries.research.is.being.are.conducted`, sep = ",") %>%
+  mutate(`Country/.countries.research.is.being.are.conducted` = trimws(`Country/.countries.research.is.being.are.conducted`))
+
+# Group by 'Funders' and count unique countries
+result2 <- PAHO_COVID_Projects %>%
+  group_by(Funders) %>%
+  summarise(Unique_Countries = n_distinct(`Country/.countries.research.is.being.are.conducted`))
