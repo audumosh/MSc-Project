@@ -27,6 +27,22 @@ PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
 
 ## Number of research projects funded, number of countries where projects are being conducted and total amount mapped to funders
 
+# Function to format the amount
+
+format_amount <- function(amount) {
+  if (amount >= 1e9) {
+    formatted_amount <- paste0("$", format(round(amount / 1e9, 1), nsmall = 1), "b")
+  } else if (amount >= 1e6) {
+    formatted_amount <- paste0("$", format(round(amount / 1e6, 1), nsmall = 1), "m")
+  } else if (amount >= 1e5) {
+    formatted_amount <- paste0("$", round(amount / 1e3), "k")
+  } else {
+    formatted_amount <- paste0("$", round(amount))
+  }
+  return(formatted_amount)
+}
+
+
 Funder_mapping <- PAHO_COVID_Projects %>%
   # Split the 'Country/ countries research are being conducted' into multiple rows
   separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
@@ -43,6 +59,21 @@ Funder_mapping <- Funder_mapping %>%
   mutate(
     Total_Amount_Awarded = scales::comma(Total_Amount_Awarded) )
 
+# Apply the function to create a new formatted amount column
+Funder_mapping <- Funder_mapping %>%
+  mutate(
+    Formatted_Amount_Awarded = sapply(Total_Amount_Awarded, function(x) {
+      amount <- as.numeric(gsub(",", "", x))
+      if (amount == 0) {
+        formatted_amount <- "N/A"
+      } else {
+        formatted_amount <- format_amount(amount)
+      }
+      return(formatted_amount)
+    }),
+    Funder_and_Amount = paste(Funders, " ", "(", Formatted_Amount_Awarded, ")", sep = "")
+  )
+  
 
 ## Classification of funders to within and outside of PAHO, mapped to the number of projects and proportion of funding awarded
 Funder_location <- PAHO_COVID_Projects %>%
@@ -58,9 +89,10 @@ Funder_location <- PAHO_COVID_Projects %>%
 # Format the Total_Amount_Committed with commas and percentage
 Funder_location <- Funder_location %>%
   mutate(
-    Total_Amount_Awarded = scales::comma(Total_Amount_Awarded),
     Proportion_of_Total_Funds = scales::percent(Proportion_of_Total_Funds)
   )
+
+
 
 # t-test to check for statistical significance in the amount awarded between funders from within and outside of PAHO
 
