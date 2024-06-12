@@ -142,3 +142,23 @@ Project_Income_classification <- Project_Income_classification %>%
 # Perform chi-squared test to check for statistical significance between HIC and Not-HIC projects
 chisq_test <- chisq.test(Project_Income_classification$Projects)
 print(chisq_test)
+
+
+# Plot the bar chart of number of projects per funder
+ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Number of Projects per Funder and Amount Awarded",
+       x = "Funder and Amount Awarded",
+       y = "Number of Projects") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + coord_flip()
+
+
+# Plot the bar chart of number of projects per funder
+ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, No_of_Countries), y = No_of_Countries)) +
+  geom_bar(stat = "identity", fill = "grey") +
+  labs(title = "Number of Countries per Funder and Amount Awarded",
+       x = "Funder and Amount Awarded",
+       y = "Number of Countries") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + coord_flip()
