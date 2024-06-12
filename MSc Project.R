@@ -1,6 +1,6 @@
 ## Install and load neccesary packages
-install.packages("tidyverse")
-install.packages("scales")
+# install.packages("tidyverse")
+# install.packages("scales")
 library(openxlsx)
 library(dplyr)
 library(ggplot2)
@@ -93,34 +93,23 @@ Funder_location <- Funder_location %>%
   )
 
 
+# Conduct chisq-test
+chisq <- chisq.test(Funder_location$Total_Amount_Awarded)
+print(chisq)
 
-# t-test to check for statistical significance in the amount awarded between funders from within and outside of PAHO
-
-within_paho_amounts <- PAHO_COVID_Projects %>%
-  filter(`Location.classification` == "Within PAHO") %>%
-  pull(`Amount.Awarded`)
-
-outside_paho_amounts <- PAHO_COVID_Projects %>%
-  filter(`Location.classification` == "Outside PAHO") %>%
-  pull(`Amount.Awarded`)
-
-# Conduct t-test
-t_test_funder_location <- t.test(within_paho_amounts, outside_paho_amounts, var.equal = FALSE)
-
-print(t_test_funder_location)
 
 
 ## Funding landscape across member states
 
 # Descriptive analysis of number of research project conducted and total number of funders per member state
 
-PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
+PAHO_COVID_Projects1 <- PAHO_COVID_Projects %>%
 # Split the 'Country/ countries research are being conducted' into multiple rows
 separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
   mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`))
 
 # Analyze the number of projects and funders for each unique country
-country_analysis <- PAHO_COVID_Projects %>%
+country_analysis <- PAHO_COVID_Projects1 %>%
   group_by(`Country/.countries.research.are.being.conducted`) %>%
   summarise(
     Total_Projects = n(),
@@ -131,12 +120,12 @@ country_analysis <- PAHO_COVID_Projects %>%
 # Descriptive analysis of number of research project conducted classified by income classification of locations
 
 # Clean and preprocess the data
-PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
+PAHO_COVID_Projects2 <- PAHO_COVID_Projects %>%
   mutate(`Income.classification` = ifelse(is.na(`Income.classification`), "Not-HIC", `Income.classification`)) %>%
   mutate(`Income.classification` = ifelse(`Income.classification` == "HIC", "HIC", "Not-HIC"))
 
 # Count the number of projects by income classification
-Project_Income_classification <- PAHO_COVID_Projects %>%
+Project_Income_classification <- PAHO_COVID_Projects2 %>%
   group_by(`Income.classification`) %>%
   summarise(Projects = n()) %>%
   ungroup()
