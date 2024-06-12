@@ -63,9 +63,19 @@ Funder_location <- Funder_location %>%
   )
 
 # t-test to check for statistical significance in the amount awarded between funders from within and outside of PAHO
-t_test_funder_location <- t.test(Amount.Awarded ~ Location.classification, data = PAHO_COVID_Projects)
-print(t_test_funder_location)
 
+within_paho_amounts <- PAHO_COVID_Projects %>%
+  filter(`Location.classification` == "Within PAHO") %>%
+  pull(`Amount.Awarded`)
+
+outside_paho_amounts <- PAHO_COVID_Projects %>%
+  filter(`Location.classification` == "Outside PAHO") %>%
+  pull(`Amount.Awarded`)
+
+# Conduct t-test
+t_test_funder_location <- t.test(within_paho_amounts, outside_paho_amounts, var.equal = FALSE)
+
+print(t_test_funder_location)
 
 
 ## Funding landscape across member states
@@ -88,5 +98,26 @@ country_analysis <- PAHO_COVID_Projects %>%
 
 # Descriptive analysis of number of research project conducted classified by income classification of locations
 
+# Clean and preprocess the data
+PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
+  mutate(`Income.classification` = ifelse(is.na(`Income.classification`), "Not-HIC", `Income.classification`)) %>%
+  mutate(`Income.classification` = ifelse(`Income.classification` == "HIC", "HIC", "Not-HIC"))
 
+# Count the number of projects by income classification
+Project_Income_classification <- PAHO_COVID_Projects %>%
+  group_by(`Income.classification`) %>%
+  summarise(Projects = n()) %>%
+  ungroup()
 
+# Calculate proportions
+Project_Income_classification <- Project_Income_classification %>%
+  mutate(Proportion = Projects / sum(Projects))
+
+# Format the proportions to percentage
+Project_Income_classification <- Project_Income_classification %>%
+  mutate(
+    Proportion = scales::percent(Proportion)
+  )
+# Perform chi-squared test to check for statistical significance between HIC and Not-HIC projects
+chisq_test <- chisq.test(Project_Income_classification$Projects)
+print(chisq_test)
