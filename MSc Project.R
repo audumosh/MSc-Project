@@ -147,6 +147,7 @@ print(chisq_test)
 # Plot the bar chart of number of projects per funder
 ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
   geom_bar(stat = "identity", fill = "skyblue") +
+  geom_text(aes(label = Total_Projects), hjust = -0.2, color = "black", size = 3) +
   labs(title = "Number of Projects per Funder and Amount Awarded",
        x = "Funder and Amount Awarded",
        y = "Number of Projects") +
@@ -157,6 +158,7 @@ ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = T
 # Plot the bar chart of number of projects per funder
 ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, No_of_Countries), y = No_of_Countries)) +
   geom_bar(stat = "identity", fill = "grey") +
+  geom_text(aes(label = Total_Projects), hjust = -0.2, color = "black", size = 3) +
   labs(title = "Number of Countries per Funder and Amount Awarded",
        x = "Funder and Amount Awarded",
        y = "Number of Countries") +
