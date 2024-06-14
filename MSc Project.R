@@ -168,18 +168,43 @@ ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, No_of_Countries), y = 
 
 #### Research question 2: To what extent did the COVID-19 research funding align with the established priorities?
 
-### Descriptive and statistical analysis of COVID-19 research funding sources
+### Descriptive analysis of research projects alignment with WHO priority areas
 
+## Assess alignment of research projects with WHO primary research priorities
 
 PAHO_COVID_Projects3 <- PAHO_COVID_Projects %>%
-  # Split the 'research priorities' into multiple rows
+  # Split the 'primary research priorities' into multiple rows
   separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
   mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`))
 
 # Analyze the number of projects and funders for each unique country
-WHO_priority_alignment <- PAHO_COVID_Projects3 %>%
+WHO_priority_alignment_1 <- PAHO_COVID_Projects3 %>%
   group_by(`PRIMARY.WHO.Research.Priority.Area.Names`) %>%
   summarise(
     Primary_focus = n()) %>%
   rename(Research_areas = `PRIMARY.WHO.Research.Priority.Area.Names`)
 
+## Assess alignment of research projects with WHO secondary research priorities
+
+PAHO_COVID_Projects4 <- PAHO_COVID_Projects %>%
+  # Split the 'secondary research priorities' into multiple rows
+  separate_rows(`SECONDARY.WHO.Research.Priority.Area.Name(s)`, sep = ";") %>%
+  mutate(`SECONDARY.WHO.Research.Priority.Area.Name(s)` = trimws(`SECONDARY.WHO.Research.Priority.Area.Name(s)`))
+
+# Analyze the number of projects and funders for each unique country
+WHO_priority_alignment_2 <- PAHO_COVID_Projects4 %>%
+  group_by(`SECONDARY.WHO.Research.Priority.Area.Name(s)`) %>%
+  summarise(
+    Secondary_focus = n()) %>%
+  rename(Research_areas = `SECONDARY.WHO.Research.Priority.Area.Name(s)`)
+
+## Merge primary and secondary priority analysis
+
+WHO_priority_alignment <- full_join(WHO_priority_alignment_1, WHO_priority_alignment_2, by = "Research_areas")
+
+
+# Replace NA values with zero
+WHO_priority_alignment <- WHO_priority_alignment %>%
+  mutate(across(everything(), ~ replace_na(., 0)))
+  
+  
