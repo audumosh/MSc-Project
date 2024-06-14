@@ -164,3 +164,22 @@ ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, No_of_Countries), y = 
        y = "Number of Countries") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + coord_flip()
+
+
+#### Research question 2: To what extent did the COVID-19 research funding align with the established priorities?
+
+### Descriptive and statistical analysis of COVID-19 research funding sources
+
+
+PAHO_COVID_Projects3 <- PAHO_COVID_Projects %>%
+  # Split the 'research priorities' into multiple rows
+  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`))
+
+# Analyze the number of projects and funders for each unique country
+WHO_priority_alignment <- PAHO_COVID_Projects3 %>%
+  group_by(`PRIMARY.WHO.Research.Priority.Area.Names`) %>%
+  summarise(
+    Primary_focus = n()) %>%
+  rename(Research_areas = `PRIMARY.WHO.Research.Priority.Area.Names`)
+
