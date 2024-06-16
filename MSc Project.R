@@ -231,5 +231,53 @@ WHO_priority_alignment <- full_join(WHO_priority_alignment_1, WHO_priority_align
 # Replace NA values with zero
 WHO_priority_alignment <- WHO_priority_alignment %>%
   mutate(across(everything(), ~ replace_na(., 0)))
-  
-  
+
+# Identify and change the specific value (4468) in the secondary focus for NA to 0
+WHO_priority_alignment <- WHO_priority_alignment %>%
+  mutate(across(everything(), ~ replace(., . == 4468, 0)))
+
+
+# Replace NA values in Research_areas with a specific label
+WHO_priority_alignment <- WHO_priority_alignment %>%
+  mutate(Research_areas = replace_na(Research_areas, "NA"))
+
+# Create a new column to order the research areas
+WHO_priority_alignment <- WHO_priority_alignment %>%
+  mutate(Total_focus = Primary_focus + Secondary_focus) %>%
+  arrange(Total_focus)
+
+# Convert Research_areas to a factor with levels in the desired order, ensuring "N/A" is last
+WHO_priority_alignment <- WHO_priority_alignment %>%
+  mutate(Research_areas = factor(Research_areas, levels = c(setdiff(unique(Research_areas), "N/A"), "N/A")))
+
+# Pivot data to long format for easier plotting
+WHO_priority_alignment_long <- WHO_priority_alignment %>%
+  pivot_longer(cols = c(Primary_focus, Secondary_focus), 
+               names_to = "Focus", 
+               values_to = "Count")
+
+# Ensure the order of the focus levels is correct
+WHO_priority_alignment_long <- WHO_priority_alignment_long %>%
+  mutate(Focus = factor(Focus, levels = c("Secondary_focus", "Primary_focus")))
+
+
+# Plot the stacked bar chart
+ggplot(WHO_priority_alignment_long, aes(x = Research_areas, y = Count, fill = Focus)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 2.5) +
+  scale_fill_manual(values = c("Primary_focus" = "#B0BDE0", "Secondary_focus" = "#1F78B4"), 
+                    labels = c("Primary_focus" = "Primary area of focus", "Secondary_focus" = "Secondary area of focus"), 
+                    name = "") +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
+    panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    legend.position = "bottom"
+  ) +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  coord_flip()
