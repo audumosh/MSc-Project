@@ -1,11 +1,15 @@
 ## Install and load neccesary packages
 # install.packages("tidyverse")
 # install.packages("scales")
+# install.packages("maps")
+# install.packages("viridis")
 library(openxlsx)
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
 library(scales)
+library(maps)
+library(viridis)
 
 
 ## Read excel file
@@ -75,6 +79,9 @@ Funder_mapping <- Funder_mapping %>%
   )
   
 
+
+
+
 ## Classification of funders to within and outside of PAHO, mapped to the number of projects and proportion of funding awarded
 Funder_location <- PAHO_COVID_Projects %>%
   group_by(Location.classification) %>%
@@ -116,6 +123,45 @@ country_analysis <- PAHO_COVID_Projects1 %>%
     No_of_Funders = n_distinct(Funders)
   ) %>%
   rename(Country = `Country/.countries.research.are.being.conducted`)
+
+country_analysis <- country_analysis %>%
+  mutate(across(everything(), ~ replace_na(., 0)))
+
+# Get world map data
+world_map <- map_data("world")
+
+
+# Merge your data with the map data
+world_map_df <- left_join(world_map, country_analysis, by = c("region" = "Country"))
+
+
+# Plot the map
+ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = Total_Projects), color = "white") +
+  scale_fill_gradient(low = "lavender", high = "darkblue", na.value = "gray90") +
+  labs(title = "Distribution of COVID-19 research projects conducted in the PAHO region",
+       fill = "Projects") +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    panel.background = element_blank()
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Descriptive analysis of number of research project conducted classified by income classification of locations
 
