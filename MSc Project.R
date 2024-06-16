@@ -79,7 +79,17 @@ Funder_mapping <- Funder_mapping %>%
   )
   
 
-
+# Plot the bar chart of number of projects per funder
+ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_text(aes(label = Total_Projects), hjust = -0.2, color = "black", size = 3) +
+  labs(
+       x = "Funder and Amount Awarded",
+       y = "Number of Projects") +
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + coord_flip()
 
 
 ## Classification of funders to within and outside of PAHO, mapped to the number of projects and proportion of funding awarded
@@ -151,18 +161,6 @@ ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 # Descriptive analysis of number of research project conducted classified by income classification of locations
 
 # Clean and preprocess the data
@@ -190,26 +188,7 @@ chisq_test <- chisq.test(Project_Income_classification$Projects)
 print(chisq_test)
 
 
-# Plot the bar chart of number of projects per funder
-ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
-  geom_text(aes(label = Total_Projects), hjust = -0.2, color = "black", size = 3) +
-  labs(title = "Number of Projects per Funder and Amount Awarded",
-       x = "Funder and Amount Awarded",
-       y = "Number of Projects") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + coord_flip()
 
-
-# Plot the bar chart of number of projects per funder
-ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, No_of_Countries), y = No_of_Countries)) +
-  geom_bar(stat = "identity", fill = "grey") +
-  geom_text(aes(label = Total_Projects), hjust = -0.2, color = "black", size = 3) +
-  labs(title = "Number of Countries per Funder and Amount Awarded",
-       x = "Funder and Amount Awarded",
-       y = "Number of Countries") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + coord_flip()
 
 
 #### Research question 2: To what extent did the COVID-19 research funding align with the established priorities?
