@@ -81,7 +81,7 @@ Funder_mapping <- Funder_mapping %>%
 
 # Plot the bar chart of number of projects per funder
 ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_bar(stat = "identity", fill = "#1F78B4") +
   geom_text(aes(label = Total_Projects), hjust = -0.2, color = "black", size = 3) +
   labs(
        x = "Funder and Amount Awarded",
@@ -148,7 +148,7 @@ world_map_df <- left_join(world_map, country_analysis, by = c("region" = "Countr
 # Plot the map
 ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
   geom_polygon(aes(fill = Total_Projects), color = "white") +
-  scale_fill_gradient(low = "lavender", high = "darkblue", na.value = "gray90") +
+  scale_fill_gradient(low = "lightblue", high = "#1F78B4", na.value = "gray90") +
   labs(title = "Distribution of COVID-19 research projects conducted in the PAHO region",
        fill = "Projects") +
   theme_minimal() +
@@ -158,7 +158,6 @@ ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
     panel.grid = element_blank(),
     panel.background = element_blank()
   )
-
 
 
 # Descriptive analysis of number of research project conducted classified by income classification of locations
