@@ -84,7 +84,7 @@ ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = T
   geom_bar(stat = "identity", fill = "#1F78B4") +
   geom_text(aes(label = Total_Projects), hjust = -0.2, color = "black", size = 3) +
   labs(
-       x = "Funder and Amount Awarded",
+       x = "",
        y = "Number of Projects") +
   theme_minimal() +
   theme(panel.grid.major.y = element_blank(),
@@ -149,7 +149,7 @@ world_map_df <- left_join(world_map, country_analysis, by = c("region" = "Countr
 ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
   geom_polygon(aes(fill = Total_Projects), color = "white") +
   scale_fill_gradient(low = "lightblue", high = "#1F78B4", na.value = "gray90") +
-  labs(title = "Distribution of COVID-19 research projects conducted in the PAHO region",
+  labs(title = "",
        fill = "Projects") +
   theme_minimal() +
   theme(
