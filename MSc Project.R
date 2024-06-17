@@ -3,6 +3,7 @@
 # install.packages("scales")
 # install.packages("maps")
 # install.packages("viridis")
+# install.packages("writexl")
 library(openxlsx)
 library(dplyr)
 library(ggplot2)
@@ -10,6 +11,7 @@ library(tidyverse)
 library(scales)
 library(maps)
 library(viridis)
+library(writexl)
 
 
 ## Read excel file
@@ -136,6 +138,24 @@ country_analysis <- PAHO_COVID_Projects1 %>%
 
 country_analysis <- country_analysis %>%
   mutate(across(everything(), ~ replace_na(., 0)))
+
+# Analyze the number of projects and funders for each unique country
+country_analysis2 <- PAHO_COVID_Projects1 %>%
+  group_by(`Country/.countries.research.are.being.conducted`) %>%
+  summarise(
+    Total_Projects = n(),
+    ) %>%
+  rename(Country = `Country/.countries.research.are.being.conducted`)
+
+country_analysis2 <- country_analysis2 %>%
+  mutate(across(everything(), ~ replace_na(., 0)))
+
+# Rename the Total_Projects column to Total Projects
+country_analysis2 <- country_analysis2 %>%
+  rename(`Total Projects` = Total_Projects)
+
+# Write the data frame to an Excel file
+write_xlsx(country_analysis2, "country_analysis2.xlsx")
 
 # Get world map data
 world_map <- map_data("world")
@@ -280,3 +300,5 @@ ggplot(WHO_priority_alignment_long, aes(x = Research_areas, y = Count, fill = Fo
     y = ""
   ) +
   coord_flip()
+
+
