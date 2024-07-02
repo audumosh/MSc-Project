@@ -221,7 +221,7 @@ PAHO_COVID_Projects3 <- PAHO_COVID_Projects %>%
   separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
   mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`))
 
-# Analyze the number of projects and funders for each unique country
+# Analyze the number of projects that maps to primary research priorities
 WHO_priority_alignment_1 <- PAHO_COVID_Projects3 %>%
   group_by(`PRIMARY.WHO.Research.Priority.Area.Names`) %>%
   summarise(
@@ -235,7 +235,7 @@ PAHO_COVID_Projects4 <- PAHO_COVID_Projects %>%
   separate_rows(`SECONDARY.WHO.Research.Priority.Area.Name(s)`, sep = ";") %>%
   mutate(`SECONDARY.WHO.Research.Priority.Area.Name(s)` = trimws(`SECONDARY.WHO.Research.Priority.Area.Name(s)`))
 
-# Analyze the number of projects and funders for each unique country
+# Analyze the number of projects that maps to secondary research priorities
 WHO_priority_alignment_2 <- PAHO_COVID_Projects4 %>%
   group_by(`SECONDARY.WHO.Research.Priority.Area.Name(s)`) %>%
   summarise(
@@ -302,3 +302,35 @@ ggplot(WHO_priority_alignment_long, aes(x = Research_areas, y = Count, fill = Fo
   coord_flip()
 
 
+
+## Assess alignment of research projects with WHO primary research sub-priorities
+
+PAHO_COVID_Projects5 <- PAHO_COVID_Projects %>%
+  # Split the 'primary research sub-priorities' into multiple rows
+  separate_rows(`PRIMARY.WHO.Research.Sub-Priority.Number(s)`, sep = ",") %>%
+  mutate(`PRIMARY.WHO.Research.Sub-Priority.Number(s)` = trimws(`PRIMARY.WHO.Research.Sub-Priority.Number(s)`))
+
+# Analyze the number of projects that maps to primary research sub-priorities
+WHO_sub_priority_alignment_1 <- PAHO_COVID_Projects5 %>%
+  group_by(`PRIMARY.WHO.Research.Sub-Priority.Number(s)`) %>%
+  summarise(
+    Primary_subpriority = n()) %>%
+  rename(Research_numbers = `PRIMARY.WHO.Research.Sub-Priority.Number(s)`)
+
+## Assess alignment of research projects with WHO secondary research sub-priorities
+
+PAHO_COVID_Projects6 <- PAHO_COVID_Projects %>%
+  # Split the 'secondary research sub-priorities' into multiple rows
+  separate_rows(`SECONDARY.WHO.Research.Sub-Priority.Number(s)`, sep = ",") %>%
+  mutate(`SECONDARY.WHO.Research.Sub-Priority.Number(s)` = trimws(`SECONDARY.WHO.Research.Sub-Priority.Number(s)`))
+
+# Analyze the number of projects that maps to secondary research sub-priorities
+WHO_sub_priority_alignment_2 <- PAHO_COVID_Projects6 %>%
+  group_by(`SECONDARY.WHO.Research.Sub-Priority.Number(s)`) %>%
+  summarise(
+    Secondary_subpriority = n()) %>%
+  rename(Research_numbers = `SECONDARY.WHO.Research.Sub-Priority.Number(s)`)
+
+## Merge primary and secondary sub-priority analysis
+
+WHO_sub_priority_alignment <- full_join(WHO_sub_priority_alignment_1, WHO_sub_priority_alignment_2, by = "Research_numbers")
