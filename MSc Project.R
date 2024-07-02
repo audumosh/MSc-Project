@@ -137,7 +137,8 @@ country_analysis <- PAHO_COVID_Projects1 %>%
   rename(Country = `Country/.countries.research.are.being.conducted`)
 
 country_analysis <- country_analysis %>%
-  mutate(across(everything(), ~ replace_na(., 0)))
+  mutate(across(where(is.numeric), ~ replace_na(., 0))) %>%
+  mutate(across(where(is.character), ~ replace_na(., "")))
 
 # Analyze the number of projects and funders for each unique country
 country_analysis2 <- PAHO_COVID_Projects1 %>%
@@ -148,7 +149,8 @@ country_analysis2 <- PAHO_COVID_Projects1 %>%
   rename(Country = `Country/.countries.research.are.being.conducted`)
 
 country_analysis2 <- country_analysis2 %>%
-  mutate(across(everything(), ~ replace_na(., 0)))
+  mutate(across(where(is.numeric), ~ replace_na(., 0))) %>%
+  mutate(across(where(is.character), ~ replace_na(., "")))
 
 # Rename the Total_Projects column to Total Projects
 country_analysis2 <- country_analysis2 %>%
@@ -248,8 +250,10 @@ WHO_priority_alignment <- full_join(WHO_priority_alignment_1, WHO_priority_align
 
 
 # Replace NA values with zero
+
 WHO_priority_alignment <- WHO_priority_alignment %>%
-  mutate(across(everything(), ~ replace_na(., 0)))
+  mutate(across(where(is.numeric), ~ replace_na(., 0))) %>%
+  mutate(across(where(is.character), ~ replace_na(., "")))
 
 # Identify and change the specific value (4468) in the secondary focus for NA to 0
 WHO_priority_alignment <- WHO_priority_alignment %>%
