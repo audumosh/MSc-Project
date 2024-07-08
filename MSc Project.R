@@ -338,3 +338,64 @@ WHO_sub_priority_alignment_2 <- PAHO_COVID_Projects6 %>%
 ## Merge primary and secondary sub-priority analysis
 
 WHO_sub_priority_alignment <- full_join(WHO_sub_priority_alignment_1, WHO_sub_priority_alignment_2, by = "Research_numbers")
+
+
+## Include subpriority names in dataframe 
+
+WHO_sub_priority_alignment <- WHO_sub_priority_alignment %>%
+  mutate(description = case_when(
+    Research_numbers == "1a" ~ "Support development of diagnostic products to improve clinical processes",
+    Research_numbers == "1b" ~ "Understand virus compartments, shedding and natural history of disease",
+    Research_numbers == "1c" ~ "Develop tools and conduct studies to monitor phenotypic change and potential adaptation",
+    Research_numbers == "1d" ~ "Characterize immunity (naturally acquired, population and vaccine-induced, including mucosal immunity)",
+    Research_numbers == "1e" ~ "Develop disease models (animal models and 3Rs approaches)",
+    Research_numbers == "1f" ~ "Virus stability in the environment",
+    Research_numbers == "2a" ~ "Investigation of animal source and route of transmission",
+    Research_numbers == "2b" ~ "Socioeconomic and behavioural risk factors for spill-over",
+    Research_numbers == "2c" ~ "Risk reduction strategies at the human-animal environment interface",
+    Research_numbers == "3a" ~ "Transmission dynamics - Clarify the relative importance of pre-symptomatic/ asymptomatic transmission (including distinction between virus shedding and infectious transmission)",
+    Research_numbers == "3b" ~ "Disease severity - Identify groups at high risk of severe infection; Determine the role of different age groups in transmission",
+    Research_numbers == "3c" ~ "Susceptibility - Determine if children are infected, and if so, are they infectious?",
+    Research_numbers == "3d" ~ "Control and mitigation measures - Predict the most effective measures to reduce the peak burden on healthcare providers and other societal functions; Estimate the effects of social distancing measures and other non-pharmaceutical interventions on transmissibility",
+    Research_numbers == "4a" ~ "Prognostic factors for severe disease (Different populations - pregnancy, young children, risk groups - immunosuppressed)",
+    Research_numbers == "4b" ~ "Understand pathophysiology of COVID-19 infection, including understanding mild disease and the role of co-infections / infection, transmissibility, viral shedding",
+    Research_numbers == "4c" ~ "Optimal endpoints for clinical trials",
+    Research_numbers == "4d" ~ "Improve processes of care, including early diagnosis, discharge criteria; Determine interventions that improve the clinical outcome of infected patients (Steroids, High flow oxygen therapy)",
+    Research_numbers == "4e" ~ "Optimal adjuvant therapies for patients (and contacts)",
+    Research_numbers == "4f" ~ "Develop core clinical outcomes to maximize usability of data across range of trials",
+    Research_numbers == "5a" ~ "Effectiveness of restriction of movement of healthy exposed and infected persons to prevent secondary transmission (home, congregate setting, geographical restriction vs nothing)",
+    Research_numbers == "5b" ~ "Effectiveness of specific PPE to reduce the risk of COVID-19 transmission among HCWs, patients and individuals in the community",
+    Research_numbers == "5c" ~ "Effectiveness of activities to minimize the role of the environment in COVID-19 transmission",
+    Research_numbers == "5d" ~ "Factors and methods influencing compliance with evidence-based IPC interventions during outbreak response",
+    Research_numbers == "6a" ~ "Develop in vitro and in vivo testing to identify candidates",
+    Research_numbers == "6b" ~ "Evaluate efficacy and safety in prophylactic use",
+    Research_numbers == "6c" ~ "Promote adequate supply of therapeutics showing efficacy",
+    Research_numbers == "6d" ~ "Evaluate efficacy and safety of therapeutics through randomised clinical trials",
+    Research_numbers == "6e" ~ "Investigate combination therapies",
+    Research_numbers == "7a" ~ "Identification of candidates for clinical evaluation in addition to the ones already prioritized",
+    Research_numbers == "7b" ~ "To develop and standardize animal models to evaluate the potential for vaccine effectiveness and to understand the potential for enhanced disease after vaccination. Results from animal models are expected to be important prior to large-scale efficacy studies and prior to studies in which enhanced disease is considered a significant possibility",
+    Research_numbers == "7c" ~ "To develop and standardize assays to support vaccine development, particularly to support the evaluation of immune responses and to support clinical case definition. Basic reagents should be shared to accelerate the development of international standards and reference panels that will help support the development of ELISAs, pseudovirion neutralization and PCR assays",
+    Research_numbers == "7d" ~ "To develop a multi-country Master Protocol for Phase 2b/Phase 3 vaccine evaluation to determine whether candidate vaccines are safe and effective before widespread distribution, using methodologically sound and ethically acceptable vaccine trial design. Vaccine efficacy trials should be done if such are feasible to implement",
+    Research_numbers == "7e" ~ "To develop potency assays and manufacturing processes to rapidly enable the production of high quality large quantities of clinical grade and GMP materials",
+    Research_numbers == "8a" ~ "Articulate and translate existing ethical standards to salient issues in COVID-19",
+    Research_numbers == "8b" ~ "Sustained education, access, and capacity building",
+    Research_numbers == "8c" ~ "The impact of restrictive public health measures (e.g., quarantine, isolation, cordon sanitaire)",
+    Research_numbers == "8d" ~ "Public health communications and the ‘infodemic’; ensuring accurate and responsible Communications",
+    Research_numbers == "8e" ~ "Ethical governance of global epidemic research",
+    Research_numbers == "9a" ~ "Public Health - What are relevant, feasible, effective approaches to promote acceptance, uptake, and adherence to public health measures for COVID-19 prevention and control; and how can secondary impacts be rapidly identified and mitigated?",
+    Research_numbers == "9b" ~ "(Clinical) care and health Systems - What are the relevant, acceptable and feasible approaches for supporting the physical health and psychosocial needs of those providing care for COVID-19 patients?",
+    Research_numbers == "9c" ~ "Media and communication - How are individuals and communities communicating and making sense of COVID-19? What are the most effective ways to address the underlying drivers of fear, anxieties, rumours, stigma regarding COVID-19, and improve public knowledge, awareness, and trust during the response?",
+    Research_numbers == "9d" ~ "Engagement - What are the relevant, acceptable and feasible approaches for rapid engagement and good participatory practice that includes communities in the public health response?",
+    Research_numbers == "9e" ~ "Sexual and reproductive health - What are the relevant, acceptable and feasible approaches to communicating uncertainty regarding mother to child transmission of COVID-19, and possible sexual transmission?",
+    Research_numbers == "9f" ~ "International cooperation - What international coordination mechanisms can optimize the international response to COVID-19?"))
+
+# Reorder columns to place "description" in front of "Research_numbers"
+WHO_sub_priority_alignment <- WHO_sub_priority_alignment %>%
+  select(Research_numbers, description, everything())
+    
+    
+    
+
+
+    
+    
