@@ -394,12 +394,72 @@ WHO_sub_priority_alignment <- WHO_sub_priority_alignment %>%
   select(Research_numbers, description, everything())
 
 # Remove the NA row
-WHO_sub_priority_alignment_1 <- WHO_sub_priority_alignment [-45, ]
+WHO_sub_priority_alignment_clean <- WHO_sub_priority_alignment [-45, ]
+
+## Analysis of subpriority areas that do not map to any WHO research area
+
+PAHO_COVID_Projects7 <- PAHO_COVID_Projects %>%
+  # Split the 'primary research priorities' into multiple rows
+  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`))
+
+# Count N/A per priority area
+NA_mapping <- PAHO_COVID_Projects7 %>%
+  filter(`PRIMARY.WHO.Research.Sub-Priority.Number(s)` == "N/A") %>%
+  group_by(`PRIMARY.WHO.Research.Priority.Area.Names`) %>%
+  summarise(NA_count = n())
+
+# delete row of NA
+NA_mapping1 <- NA_mapping [-8, ]    
+
+# reshape dataframe for merging
+NA_mapping1 <- NA_mapping1 %>%
+  mutate(Research_numbers = case_when(
+    PRIMARY.WHO.Research.Priority.Area.Names == "Virus: natural history, transmission and diagnostics" ~ "1-NA",
+    PRIMARY.WHO.Research.Priority.Area.Names == "Animal and environmental research on the virus origin, and management measures at the human-animal interface" ~ "2-NA",
+    PRIMARY.WHO.Research.Priority.Area.Names == "Epidemiological studies" ~ "3-NA",
+    PRIMARY.WHO.Research.Priority.Area.Names == "Clinical characterization and management" ~ "4-NA",
+    PRIMARY.WHO.Research.Priority.Area.Names == "Infection prevention and control, including health care workers’ protection" ~ "5-NA",
+    PRIMARY.WHO.Research.Priority.Area.Names == "Candidate therapeutics R&D" ~ "6-NA",
+    PRIMARY.WHO.Research.Priority.Area.Names == "Candidate vaccines R&D" ~ "7-NA",
+    PRIMARY.WHO.Research.Priority.Area.Names == "Ethics considerations for research" ~ "8-NA",
+    PRIMARY.WHO.Research.Priority.Area.Names == "Social sciences in the outbreak response" ~ "9-NA"))
+
+NA_mapping1 <- NA_mapping1 %>%
+  mutate(description = case_when(
+    Research_numbers == "1-NA" ~ "does not map to WHO sub-priority",
+    Research_numbers == "2-NA" ~ "does not map to WHO sub-priority",
+    Research_numbers == "3-NA" ~ "does not map to WHO sub-priority",
+    Research_numbers == "4-NA" ~ "does not map to WHO sub-priority",
+    Research_numbers == "5-NA" ~ "does not map to WHO sub-priority",
+    Research_numbers == "6-NA" ~ "does not map to WHO sub-priority",
+    Research_numbers == "7-NA" ~ "does not map to WHO sub-priority",
+    Research_numbers == "8-NA" ~ "does not map to WHO sub-priority",
+    Research_numbers == "9-NA" ~ "does not map to WHO sub-priority"))
+
+NA_mapping1 <- NA_mapping1 %>% rename(Primary_subpriority = NA_count)
+
+# Reorder columns to place "description" in front of "Research_numbers"
+NA_mapping1 <- NA_mapping1 %>%
+  select(Research_numbers, description, Primary_subpriority, everything())
 
 
-    
-    
+# Merge the two tables based on the common columns
+WHO_sub_priority_alignment_final <- full_join(WHO_sub_priority_alignment_clean, NA_mapping1, by = c("Research_numbers", "description", "Primary_subpriority"))
+
+# Reorder columns to keep the sceondary_subpriority
+Secondary_subpriority <- names(WHO_sub_priority_alignment_clean)[4]
+WHO_sub_priority_alignment_final <- WHO_sub_priority_alignment_final %>%
+  select(-matches(Secondary_subpriority), everything(), Secondary_subpriority)
+
+# Delete primary research priority column from final dataframe 
+WHO_sub_priority_alignment_final <- WHO_sub_priority_alignment_final %>%
+  select(-`PRIMARY.WHO.Research.Priority.Area.Names`)
 
 
-    
-    
+# Arrange the dataframe in ascending order based on Research_numbers
+WHO_sub_priority_alignment_final <- WHO_sub_priority_alignment_final %>%
+  arrange(Research_numbers)
+
+
+
