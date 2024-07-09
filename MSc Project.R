@@ -392,7 +392,11 @@ WHO_sub_priority_alignment <- WHO_sub_priority_alignment %>%
 # Reorder columns to place "description" in front of "Research_numbers"
 WHO_sub_priority_alignment <- WHO_sub_priority_alignment %>%
   select(Research_numbers, description, everything())
-    
+
+# Remove the NA row
+WHO_sub_priority_alignment_1 <- WHO_sub_priority_alignment [-45, ]
+
+
     
     
 
