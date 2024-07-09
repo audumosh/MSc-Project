@@ -382,12 +382,12 @@ WHO_sub_priority_alignment <- WHO_sub_priority_alignment %>%
     Research_numbers == "8c" ~ "The impact of restrictive public health measures (e.g., quarantine, isolation, cordon sanitaire)",
     Research_numbers == "8d" ~ "Public health communications and the ‘infodemic’; ensuring accurate and responsible Communications",
     Research_numbers == "8e" ~ "Ethical governance of global epidemic research",
-    Research_numbers == "9a" ~ "Public Health - What are relevant, feasible, effective approaches to promote acceptance, uptake, and adherence to public health measures for COVID-19 prevention and control; and how can secondary impacts be rapidly identified and mitigated?",
-    Research_numbers == "9b" ~ "(Clinical) care and health Systems - What are the relevant, acceptable and feasible approaches for supporting the physical health and psychosocial needs of those providing care for COVID-19 patients?",
-    Research_numbers == "9c" ~ "Media and communication - How are individuals and communities communicating and making sense of COVID-19? What are the most effective ways to address the underlying drivers of fear, anxieties, rumours, stigma regarding COVID-19, and improve public knowledge, awareness, and trust during the response?",
-    Research_numbers == "9d" ~ "Engagement - What are the relevant, acceptable and feasible approaches for rapid engagement and good participatory practice that includes communities in the public health response?",
-    Research_numbers == "9e" ~ "Sexual and reproductive health - What are the relevant, acceptable and feasible approaches to communicating uncertainty regarding mother to child transmission of COVID-19, and possible sexual transmission?",
-    Research_numbers == "9f" ~ "International cooperation - What international coordination mechanisms can optimize the international response to COVID-19?"))
+    Research_numbers == "9a" ~ "Public Health - What are relevant, feasible,\neffective approaches to promote acceptance,\nuptake, and adherence to public health measures for COVID-19 prevention and control;\nand how can secondary impacts be rapidly identified and mitigated?",
+    Research_numbers == "9b" ~ "(Clinical) care and health Systems - \nWhat are the relevant, acceptable and \nfeasible approaches for supporting the physical health and \npsychosocial needs of those providing care for COVID-19 patients?",
+    Research_numbers == "9c" ~ "Media and communication - \nHow are individuals and communities communicating and \nmaking sense of COVID-19? \nWhat are the most effective ways to \naddress the underlying drivers of fear, anxieties, rumours, \nstigma regarding COVID-19, and improve public knowledge, awareness, and trust during the response?",
+    Research_numbers == "9d" ~ "Engagement - What are the relevant, \nacceptable and feasible approaches for rapid engagement \nand good participatory practice that \nincludes communities in the public health response?",
+    Research_numbers == "9e" ~ "Sexual and reproductive health - \nWhat are the relevant, acceptable and feasible \napproaches to communicating uncertainty regarding \nmother to child transmission of COVID-19, \nand possible sexual transmission?",
+    Research_numbers == "9f" ~ "International cooperation - What international coordination \nmechanisms can optimize the international response to COVID-19?"))
 
 # Reorder columns to place "description" in front of "Research_numbers"
 WHO_sub_priority_alignment <- WHO_sub_priority_alignment %>%
@@ -461,5 +461,103 @@ WHO_sub_priority_alignment_final <- WHO_sub_priority_alignment_final %>%
 WHO_sub_priority_alignment_final <- WHO_sub_priority_alignment_final %>%
   arrange(Research_numbers)
 
+# Split the social science in outbreak response data for plotting
+
+SSOR <- WHO_sub_priority_alignment_final %>% slice(47:53)
+
+# Replace NA values with zero
+
+SSOR <- SSOR %>%
+  mutate(across(where(is.numeric), ~ replace_na(., 0))) %>%
+  mutate(across(where(is.character), ~ replace_na(., "")))
+
+# Create a new column combining Research_numbers and description
+SSOR <- SSOR %>%
+  mutate(Subpriority = paste(Research_numbers, description, sep = ": "))
+
+# Reverse the order of Subpriority levels
+SSOR <- SSOR %>%
+  mutate(Subpriority = factor(Subpriority, levels = rev(levels(factor(Subpriority)))))
+
+# Reshape the data for plotting
+SSOR_long <- SSOR %>%
+  select(Subpriority, Primary_subpriority, Secondary_subpriority) %>%
+  pivot_longer(cols = c(Primary_subpriority, Secondary_subpriority), 
+               names_to = "Priority_type", values_to = "Count")
+
+# Ensure the Priority_type column is a factor with the desired order
+SSOR_long <- SSOR_long %>%
+  mutate(Priority_type = factor(Priority_type, levels = c("Secondary_subpriority", "Primary_subpriority")))
+
+# Plot the stacked bar chart
+ggplot(SSOR_long, aes(x = Subpriority, y = Count, fill = Priority_type)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 2.5) +
+  scale_fill_manual(values = c("Primary_subpriority" = "#B0BDE0", "Secondary_subpriority" = "#1F78B4"), 
+                    labels = c("Primary_subpriority" = "Primary subpriority area", "Secondary_subpriority" = "Secondary subpriority area"), 
+                    name = "") +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
+    panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    legend.position = "bottom"
+  ) +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  coord_flip()
 
 
+
+
+# Split the animal and enviromental research data for plotting
+
+AER <- WHO_sub_priority_alignment_final %>% slice(8:11)
+
+# Replace NA values with zero
+
+AER <- AER %>%
+  mutate(across(where(is.numeric), ~ replace_na(., 0))) %>%
+  mutate(across(where(is.character), ~ replace_na(., "")))
+
+# Create a new column combining Research_numbers and description
+AER <- AER %>%
+  mutate(Subpriority = paste(Research_numbers, description, sep = ": "))
+
+# Reverse the order of Subpriority levels
+AER <- AER %>%
+  mutate(Subpriority = factor(Subpriority, levels = rev(levels(factor(Subpriority)))))
+
+# Reshape the data for plotting
+AER_long <- AER %>%
+  select(Subpriority, Primary_subpriority, Secondary_subpriority) %>%
+  pivot_longer(cols = c(Primary_subpriority, Secondary_subpriority), 
+               names_to = "Priority_type", values_to = "Count")
+
+# Ensure the Priority_type column is a factor with the desired order
+AER_long <- AER_long %>%
+  mutate(Priority_type = factor(Priority_type, levels = c("Secondary_subpriority", "Primary_subpriority")))
+
+# Plot the stacked bar chart
+ggplot(AER_long, aes(x = Subpriority, y = Count, fill = Priority_type)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 2.5) +
+  scale_fill_manual(values = c("Primary_subpriority" = "#B0BDE0", "Secondary_subpriority" = "#1F78B4"), 
+                    labels = c("Primary_subpriority" = "Primary subpriority area", "Secondary_subpriority" = "Secondary subpriority area"), 
+                    name = "") +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
+    panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    legend.position = "bottom"
+  ) +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  coord_flip()
