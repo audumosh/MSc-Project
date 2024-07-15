@@ -48,25 +48,41 @@ format_amount <- function(amount) {
   return(formatted_amount)
 }
 
+# Map funders to no of countries funded
 
-Funder_mapping <- PAHO_COVID_Projects %>%
+PAHO_COVID_Projects1 <- PAHO_COVID_Projects %>%
   # Split the 'Country/ countries research are being conducted' into multiple rows
   separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
-  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`)) %>%
+  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`)) 
+
+
+
+Funder_mapping_countries <- PAHO_COVID_Projects1 %>%
   group_by(Funders) %>%
   summarise(
-    Total_Projects = n(),
     No_of_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
+  )
+
+# Map funders to number of projects and total amount awarded 
+
+Funder_mapping_xx <- PAHO_COVID_Projects %>% group_by(Funders) %>%
+  summarise(
+    Total_Projects = n(),
     Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE),
-    )
+  )
+
 
 # Format the Total_Amount_Awarded with commas
-Funder_mapping <- Funder_mapping %>%
+Funder_mapping_xx <- Funder_mapping_xx %>%
   mutate(
     Total_Amount_Awarded = scales::comma(Total_Amount_Awarded) )
 
+# Join the two tables
+Funder_mapping_joined <- left_join(Funder_mapping_xx, Funder_mapping_countries, by = "Funders")
+
+
 # Apply the function to create a new formatted amount column
-Funder_mapping <- Funder_mapping %>%
+Funder_mapping <- Funder_mapping_joined %>%
   mutate(
     Formatted_Amount_Awarded = sapply(Total_Amount_Awarded, function(x) {
       amount <- as.numeric(gsub(",", "", x))
@@ -105,10 +121,16 @@ Funder_location <- PAHO_COVID_Projects %>%
     Proportion_of_Total_Funds = Total_Amount_Awarded / sum(Total_Amount_Awarded)
   )
 
-# Format the Total_Amount_Committed with commas and percentage
+# Format the Total_Amount_Committed with percentage
 Funder_location <- Funder_location %>%
   mutate(
     Proportion_of_Total_Funds = scales::percent(Proportion_of_Total_Funds)
+  )
+
+# Apply the format_amount function to the Total_Amount_Awarded column
+Funder_location_formatted <- Funder_location %>%
+  mutate(
+    Total_Amount_Awarded = sapply(Total_Amount_Awarded, format_amount)
   )
 
 
