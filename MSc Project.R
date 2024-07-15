@@ -144,13 +144,13 @@ print(chisq)
 
 # Descriptive analysis of number of research project conducted and total number of funders per member state
 
-PAHO_COVID_Projects1 <- PAHO_COVID_Projects %>%
+PAHO_COVID_Projects2 <- PAHO_COVID_Projects %>%
 # Split the 'Country/ countries research are being conducted' into multiple rows
 separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
   mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`))
 
 # Analyze the number of projects and funders for each unique country
-country_analysis <- PAHO_COVID_Projects1 %>%
+country_analysis <- PAHO_COVID_Projects2 %>%
   group_by(`Country/.countries.research.are.being.conducted`) %>%
   summarise(
     Total_Projects = n(),
@@ -162,8 +162,8 @@ country_analysis <- country_analysis %>%
   mutate(across(where(is.numeric), ~ replace_na(., 0))) %>%
   mutate(across(where(is.character), ~ replace_na(., "")))
 
-# Analyze the number of projects and funders for each unique country
-country_analysis2 <- PAHO_COVID_Projects1 %>%
+# Analyze the number of projects for each unique country
+country_analysis2 <- PAHO_COVID_Projects2 %>%
   group_by(`Country/.countries.research.are.being.conducted`) %>%
   summarise(
     Total_Projects = n(),
