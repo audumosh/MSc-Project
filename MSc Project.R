@@ -579,3 +579,5 @@ ggplot(AER_long, aes(x = Subpriority, y = Count, fill = Priority_type)) +
     y = ""
   ) +
   coord_flip()
+
+
