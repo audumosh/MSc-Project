@@ -273,9 +273,9 @@ WHO_priority_alignment <- WHO_priority_alignment %>%
   mutate(across(where(is.numeric), ~ replace_na(., 0))) %>%
   mutate(across(where(is.character), ~ replace_na(., "")))
 
-# Identify and change the specific value (4468) in the secondary focus for NA to 0
+# Identify and change the specific value (8965) in the secondary focus for NA to 0
 WHO_priority_alignment <- WHO_priority_alignment %>%
-  mutate(across(everything(), ~ replace(., . == 4468, 0)))
+  mutate(across(everything(), ~ replace(., . == 8965, 0)))
 
 
 # Replace NA values in Research_areas with a specific label
