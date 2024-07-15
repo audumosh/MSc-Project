@@ -206,13 +206,9 @@ ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
 
 # Descriptive analysis of number of research project conducted classified by income classification of locations
 
-# Clean and preprocess the data
-PAHO_COVID_Projects2 <- PAHO_COVID_Projects %>%
-  mutate(`Income.classification` = ifelse(is.na(`Income.classification`), "Not-HIC", `Income.classification`)) %>%
-  mutate(`Income.classification` = ifelse(`Income.classification` == "HIC", "HIC", "Not-HIC"))
 
 # Count the number of projects by income classification
-Project_Income_classification <- PAHO_COVID_Projects2 %>%
+Project_Income_classification <- PAHO_COVID_Projects %>%
   group_by(`Income.classification`) %>%
   summarise(Projects = n()) %>%
   ungroup()
