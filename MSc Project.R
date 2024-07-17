@@ -55,16 +55,103 @@ summary_of_project_location <- data.frame(
 )
 
 
+# Descriptive analysis of the number of countries where research are being conducted classified by income levels
+
+# Define income classifications
+hic_countries <- c("Canada", "USA", "Guyana", "Panama", "Chile", "Uruguay", 
+                   "Trinidad and Tobago", "Barbados", "Bahamas", "Saint Kitts and Nevis", 
+                   "Antigua and Barbuda", "Virgin Islands (british)", "Turks and Caicos Islands", 
+                   "Aruba", "Guadeloupe", "Cayman Islands", "Curaçao", "French Guiana", 
+                   "Martinique", "Montserrat", "Puerto Rico", "St. Maarten")
+
+lmic_countries <- c("Belize", "Dominican Republic", "Jamaica", "Suriname", "Colombia", 
+                    "Ecuador", "Peru", "Paraguay", "Venezuela", "Mexico", "Argentina", 
+                    "Grenada", "Costa Rica", "Saint Lucia", "Saint Vincent and the Grenadines", 
+                    "Dominica", "Brazil", "Honduras", "Nicaragua", "Guatemala", "El Salvador", 
+                    "Bolivia", "Cuba", "Haiti")
+
+
+# Function to get the list of countries by income classification
+get_income_countries <- function(countries, income_list) {
+  country_list <- unlist(strsplit(countries, ","))
+  country_list <- trimws(country_list)
+  return(intersect(country_list, income_list))
+}
+
+# Separate the countries into HIC and LMIC
+Income_level_separated <- PAHO_COVID_Projects %>%
+  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
+  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`)) %>%
+  mutate(Income_Classification = case_when(
+    `Country/.countries.research.are.being.conducted` %in% hic_countries ~ "HIC",
+    `Country/.countries.research.are.being.conducted` %in% lmic_countries ~ "LMIC",
+    TRUE ~ NA_character_
+  ))
+
+# Summarize the data by income classification
+unique_countries <- Income_level_separated %>%
+  filter(!is.na(Income_Classification)) %>%
+  group_by(Income_Classification) %>%
+  summarise(
+    Number_of_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
+    List_of_Countries = paste(sort(unique(`Country/.countries.research.are.being.conducted`)), collapse = ", ")
+  ) %>%
+  ungroup()
+
+
+# Rename columns
+colnames(unique_countries) <- c("Income Classification", "Number of Countries", "List of Countries")
+
+
+# Descriptive analysis of number of research project conducted classified by income classification of locations
+
+# Count the number of projects by income classification
+Project_Income_classification <- PAHO_COVID_Projects %>%
+  group_by(`Income.classification`) %>%
+  summarise(Projects = n()) %>%
+  ungroup()
+
+# Calculate proportions
+Project_Income_classification <- Project_Income_classification %>%
+  mutate(Proportion = Projects / sum(Projects))
+
+# Format the proportions to percentage
+Project_Income_classification <- Project_Income_classification %>%
+  mutate(
+    Proportion = scales::percent(Proportion)
+  )
 
 
 
 
+# Perform chi-squared test to check for statistical significance between HIC and Not-HIC projects
+chisq_test <- chisq.test(Project_Income_classification$Projects)
+print(chisq_test)
 
 
-
-
-
-
+# Plot the bar chart
+ggplot(Project_Income_classification, aes(x = `Income.classification`, y = Projects, label = paste0(Projects, " (", Proportion, ")"))) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_text(aes(label = paste0(Projects, " (", Proportion, ")")), vjust = -0.5, size = 5) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(), # Remove major y gridlines
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 360, hjust = 1, size = 12),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid = element_blank(), # Ensure all gridlines are removed
+    axis.line.y = element_line(color = "grey") # Add a line for the y-axis
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title = "",
+    x = "Income Classification",
+    y = "Number of Projects"
+  ) +
+  geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
 
 
 ### Descriptive and statistical analysis of COVID-19 research funding sources
@@ -242,27 +329,7 @@ ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
   )
 
 
-# Descriptive analysis of number of research project conducted classified by income classification of locations
 
-
-# Count the number of projects by income classification
-Project_Income_classification <- PAHO_COVID_Projects %>%
-  group_by(`Income.classification`) %>%
-  summarise(Projects = n()) %>%
-  ungroup()
-
-# Calculate proportions
-Project_Income_classification <- Project_Income_classification %>%
-  mutate(Proportion = Projects / sum(Projects))
-
-# Format the proportions to percentage
-Project_Income_classification <- Project_Income_classification %>%
-  mutate(
-    Proportion = scales::percent(Proportion)
-  )
-# Perform chi-squared test to check for statistical significance between HIC and Not-HIC projects
-chisq_test <- chisq.test(Project_Income_classification$Projects)
-print(chisq_test)
 
 
 
