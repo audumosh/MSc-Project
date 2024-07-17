@@ -29,6 +29,44 @@ PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
 
 #### Research question 1: What were the primary sources of funding for COVID-19 research conducted in the PAHO region?
 
+## Descriptive analysis of research projects
+
+# Count total number of projects
+total_projects <- nrow(PAHO_COVID_Projects)
+
+# Function to check if a project is single-country or multi-country
+is_single_country <- function(countries) {
+  return(length(strsplit(countries, ",")[[1]]) == 1)
+}
+
+# Apply the function to determine single vs multi-country projects
+PAHO_COVID_Projects_0 <- PAHO_COVID_Projects %>%
+  mutate(Single_Country = sapply(`Country/.countries.research.are.being.conducted`, is_single_country))
+
+# Count the number of single-country and multi-country projects
+single_country_projects <- sum(PAHO_COVID_Projects_0$Single_Country)
+multi_country_projects <- total_projects - single_country_projects
+
+# Create a summary table
+summary_of_project_location <- data.frame(
+  Total_Projects = total_projects,
+  Single_Country_Projects = single_country_projects,
+  Multi_Country_Projects = multi_country_projects
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Descriptive and statistical analysis of COVID-19 research funding sources
 
 ## Number of research projects funded, number of countries where projects are being conducted and total amount mapped to funders
