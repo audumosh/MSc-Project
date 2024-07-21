@@ -121,9 +121,6 @@ Project_Income_classification <- Project_Income_classification %>%
     Proportion = scales::percent(Proportion)
   )
 
-
-
-
 # Perform chi-squared test to check for statistical significance between HIC and Not-HIC projects
 chisq_test <- chisq.test(Project_Income_classification$Projects)
 print(chisq_test)
@@ -154,6 +151,73 @@ ggplot(Project_Income_classification, aes(x = `Income.classification`, y = Proje
   geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
 
 
+
+## descriptive and statistical analyses of number of funders and total amount awarded mapped to country income levels
+
+# Count total number of unique funders
+total_funders <- n_distinct(PAHO_COVID_Projects$Funders)
+
+
+# Disaggregate by income classification
+funders_per_income_classification_1 <- PAHO_COVID_Projects %>%
+  group_by(`Income.classification`) %>%
+  summarise(
+    Funders = n_distinct(Funders),
+    Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE))%>%
+  mutate(
+    Proportion_of_Total_Funds = Total_Amount_Awarded / sum(Total_Amount_Awarded)
+  ) %>%
+  mutate(
+    Proportion_of_Total_Funds = scales::percent(Proportion_of_Total_Funds)
+  ) %>%
+  mutate(
+    Total_Amount_Awarded = sapply(Total_Amount_Awarded, format_amount)
+  )
+
+# Statiscal analysis to compare amount awarded between HIC and LMIC
+
+# Filter data for only HIC and only LMIC
+hic_data <- PAHO_COVID_Projects %>%
+  filter(`Income.classification` == "Only HIC") %>%
+  pull(`Amount.Awarded`)
+
+lmics_data <- PAHO_COVID_Projects %>%
+  filter(`Income.classification` == "Only LMIC") %>%
+  pull(`Amount.Awarded`)
+
+# Check sample sizes
+cat("Sample size for HIC data:", length(hic_data), "\n")
+cat("Sample size for LMIC data:", length(lmics_data), "\n")
+
+# Ensure there are at least 3 data points in each sample for statistical testing
+if (length(hic_data) < 3 | length(lmics_data) < 3) {
+  cat("Not enough data points for statistical testing.\n")
+} else {
+  # Check for normality using Shapiro-Wilk test
+  shapiro_hic <- shapiro.test(sample(hic_data, min(length(hic_data), 5000))) # Sample max 5000 points for Shapiro test
+  shapiro_lmics <- shapiro.test(lmics_data)
+  
+  cat("Shapiro-Wilk test for HIC data:\n")
+  print(shapiro_hic)
+  cat("Shapiro-Wilk test for LMIC data:\n")
+  print(shapiro_lmics)
+  
+  # Choose the test based on normality results
+  if (shapiro_hic$p.value > 0.05 & shapiro_lmics$p.value > 0.05) {
+    # If both samples are normally distributed, use the t-test
+    t_test_result <- t.test(hic_data, lmics_data)
+    cat("Two-sample t-test result:\n")
+    print(t_test_result)
+  } else {
+    # If samples are not normally distributed, use the Wilcoxon rank-sum test
+    wilcox_test_result <- wilcox.test(hic_data, lmics_data)
+    cat("Wilcoxon rank-sum test result:\n")
+    print(wilcox_test_result)
+  }
+}
+
+
+
 ### Descriptive and statistical analysis of COVID-19 research funding sources
 
 ## Number of research projects funded, number of countries where projects are being conducted and total amount mapped to funders
@@ -179,7 +243,6 @@ PAHO_COVID_Projects1 <- PAHO_COVID_Projects %>%
   # Split the 'Country/ countries research are being conducted' into multiple rows
   separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
   mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`)) 
-
 
 
 Funder_mapping_countries <- PAHO_COVID_Projects1 %>%
@@ -262,6 +325,34 @@ Funder_location_formatted <- Funder_location %>%
 # Conduct chisq-test
 chisq <- chisq.test(Funder_location$Total_Amount_Awarded)
 print(chisq)
+
+
+# Filter data by funder location classification
+within_paho <- PAHO_COVID_Projects %>%
+  filter(`Location.classification` == "Within PAHO")
+
+outside_paho <- PAHO_COVID_Projects %>%
+  filter(`Location.classification` == "Outside PAHO")
+
+# Function to summarize data by income classification
+summarize_by_income <- function(data, location) {
+  data %>%
+    group_by(`Income.classification`) %>%
+    summarise(
+      Funders = n_distinct(Funders),
+      Total_Awarded = sum(`Amount.Awarded`, na.rm = TRUE)
+    ) %>%
+    mutate(Location = location)
+}
+
+# Summarize data for both Within PAHO and Outside PAHO
+within_paho_summary <- summarize_by_income(within_paho, "Within PAHO")
+outside_paho_summary <- summarize_by_income(outside_paho, "Outside PAHO")
+
+# Combine the summaries
+combined_summary <- bind_rows(within_paho_summary, outside_paho_summary)
+
+
 
 
 
