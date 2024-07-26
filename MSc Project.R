@@ -295,7 +295,7 @@ ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = T
   theme_minimal() +
   theme(panel.grid.major.y = element_blank(),
         panel.grid.minor.y = element_blank(),
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + coord_flip()
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 
 ## Classification of funders to within and outside of PAHO, mapped to the number of projects and proportion of funding awarded
