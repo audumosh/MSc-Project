@@ -103,6 +103,59 @@ unique_countries <- Income_level_separated %>%
 colnames(unique_countries) <- c("Income Classification", "Number of Countries", "List of Countries")
 
 
+# Define unique income classifications
+
+income_classification_list <- list(
+"High-income" = c("Anguilla", "Bermuda", "Canada", "USA", "Guyana", "Panama", "Chile", "Uruguay", 
+                   "Trinidad and Tobago", "Barbados", "Bahamas", "Saint Kitts and Nevis", 
+                   "Antigua and Barbuda", "Virgin Islands (british)", "Turks and Caicos Islands", 
+                   "Aruba", "Guadeloupe", "Cayman Islands", "Curaçao", "French Guiana", 
+                   "Martinique", "Montserrat", "Puerto Rico", "St. Maarten"),
+
+"Upper-middle" = c("Belize", "Dominican Republic", "Jamaica", "Suriname", "Colombia", 
+                    "Ecuador", "Peru", "Paraguay", "Mexico", "Argentina", 
+                    "Grenada", "Costa Rica", "Saint Lucia", "Saint Vincent and the Grenadines", 
+                    "Dominica", "Brazil", "Honduras", "Guatemala", "El Salvador", "Cuba"),
+                    
+"Lower-middle" = c("Venezuela", "Honduras", "Nicaragua", "Bolivia", "Haiti")
+)                 
+
+# Function to classify a country based on the predefined list
+classify_country <- function(country) {
+  for (income_class in names(income_classification_list)) {
+    if (country %in% income_classification_list[[income_class]]) {
+      return(income_class)
+    }
+  }
+  return(NA) # Return NA if the country is not found in the list
+}
+
+
+# Function to classify countries and count projects
+classify_and_count_projects <- function(PAHO_COVID_Projects_classify) {
+  # Split countries into individual rows
+  PAHO_COVID_Projects_classify <- PAHO_COVID_Projects %>%
+    separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
+    rename(Country = `Country/.countries.research.are.being.conducted`)
+  
+  # Classify each country
+  PAHO_COVID_Projects_classify <- PAHO_COVID_Projects_classify %>%
+    mutate(`Income Classification New` = sapply(Country, classify_country))
+  
+  # Count the number of projects per income classification
+  project_count <- PAHO_COVID_Projects_classify %>%
+    group_by(`Income Classification New`) %>%
+    summarise(Projects = n_distinct(`Unique.database.reference.number`))
+  
+  return(project_count)
+}
+
+# Perform the classification and count
+project_count_by_income <- classify_and_count_projects(PAHO_COVID_Projects)
+
+# Perform the classification and count
+project_count_by_income_2 <- classify_and_count_projects(PAHO_COVID_Projects_classify)
+
 # Descriptive analysis of number of research project conducted classified by income classification of locations
 
 # Count the number of projects by income classification
@@ -297,6 +350,19 @@ ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = T
         panel.grid.minor.y = element_blank(),
     axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
+# Plot the bar chart of number of projects per funder
+ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
+  geom_bar(stat = "identity", fill = "#1F78B4") +
+  geom_text(aes(label = Total_Projects), vjust = -1, hjust = 0.5, angle = 90, color = "black", size = 2) +
+  labs(
+    x = "",
+    y = "Number of Projects") +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(),  # Remove major vertical gridlines
+    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, margin = margin(t = -10))
+  )
 
 ## Classification of funders to within and outside of PAHO, mapped to the number of projects and proportion of funding awarded
 Funder_location <- PAHO_COVID_Projects %>%
@@ -397,12 +463,23 @@ country_analysis2 <- country_analysis2 %>%
 # Write the data frame to an Excel file
 write_xlsx(country_analysis2, "country_analysis2.xlsx")
 
+# Define the regions of interest
+regions_of_interest <- c("USA", "Canada", "Mexico", "Guatemala", "Belize", "El Salvador", "Honduras", 
+                         "Nicaragua", "Costa Rica", "Panama", "Colombia", "Venezuela", "Guyana", 
+                         "Suriname", "Ecuador", "Peru", "Brazil", "Bolivia", "Paraguay", "Chile", 
+                         "Argentina", "Uruguay", "Cuba", "Haiti", "Dominican Republic", "Puerto Rico", 
+                         "Jamaica", "Trinidad and Tobago", "Bahamas", "Barbados", "Saint Lucia", 
+                         "Grenada", "Saint Vincent and the Grenadines", "Antigua and Barbuda", 
+                         "Saint Kitts and Nevis", "Aruba", "Dominica", "Guadeloupe", "Nicaragua", "Paraguay", "St. Maarten")
 # Get world map data
 world_map <- map_data("world")
 
+# Filter the map data for the regions of interest
+filtered_world_map <- world_map %>% filter(region %in% regions_of_interest)
 
+# Assuming country_analysis contains the data you want to merge with the map data
 # Merge your data with the map data
-world_map_df <- left_join(world_map, country_analysis, by = c("region" = "Country"))
+world_map_df <- left_join(filtered_world_map, country_analysis, by = c("region" = "Country"))
 
 
 # Plot the map
@@ -417,10 +494,8 @@ ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
     axis.title = element_blank(),
     panel.grid = element_blank(),
     panel.background = element_blank()
-  )
-
-
-
+  ) +
+  coord_fixed(xlim = c(-170, -30), ylim = c(-60, 90), ratio = 1.3)
 
 
 
