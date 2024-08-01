@@ -439,7 +439,49 @@ ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = T
     axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, margin = margin(t = -10))
   )
 
+## Classification of funders based on locations
+
+# Group the data by 'funder location' and count the number of distinct funders
+funder_countries <- PAHO_COVID_Projects %>%
+  group_by(`Funder.location`) %>%
+  summarise(Number_of_Funders = n_distinct(Funders, na.rm = TRUE))
+
+# Write the data frame to an Excel file
+write_xlsx(funder_countries, "funder_countries.xlsx")
+
+# Get world map data
+world_map <- map_data("world")
+
+# Rename the columns for merging
+funder_countries <- funder_countries %>%
+  rename(region = `Funder.location`)
+
+# Merge the map data with the funder data
+world_map_df <- left_join(world_map, funder_countries, by = "region")
+
+# Plot the map
+ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = Number_of_Funders), color = "white") +
+  scale_fill_gradient(low = "lightblue", high = "#1F78B4", na.value = "gray90", name = "Number of Funders") +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    panel.background = element_blank(),
+    legend.position = "bottom"  # Position the legend at the bottom
+  ) +
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5, direction = "horizontal"))
+  
+
+
 ## Classification of funders to within and outside of PAHO, mapped to the number of projects and proportion of funding awarded
+
 Funder_location <- PAHO_COVID_Projects %>%
   group_by(Location.classification) %>%
   summarise(
@@ -461,6 +503,9 @@ Funder_location_formatted <- Funder_location %>%
   mutate(
     Total_Amount_Awarded = sapply(Total_Amount_Awarded, format_amount)
   )
+
+# Write the data frame to an Excel file
+write_xlsx(Funder_location_formatted, "Funder_location_formatted.xlsx")
 
 
 # Conduct chisq-test
