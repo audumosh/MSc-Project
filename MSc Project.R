@@ -337,6 +337,16 @@ Funder_mapping <- Funder_mapping_joined %>%
     Funder_and_Amount = paste(Funders, " ", "(", Formatted_Amount_Awarded, ")", sep = "")
   )
   
+# Calculate the total amount from all funders
+total_amount_awarded <- PAHO_COVID_Projects %>%
+  summarise(Total_Amount = sum(Amount.Awarded, na.rm = TRUE))
+
+# Format the Total_Amount_Awarded with commas
+total_amount_awarded_format <- total_amount_awarded %>%
+  mutate(
+    Total_Amount = scales::comma(Total_Amount) )
+
+
 ## Plotting funders to number of projects and countries (top 20)
 
 # Apply the function to create a new formatted amount column and sort by number of projects
@@ -357,7 +367,7 @@ Funder_mapping_plot_project$Metric <- factor(Funder_mapping_plot_project$Metric,
 # Plot the bar chart
 ggplot(Funder_mapping_plot_project, aes(x = reorder(Funders, -Value), y = Value, fill = Metric)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
-  geom_text(aes(label = Value), position = position_dodge(width = 0.9), vjust = -0.5, size = 3) +
+  geom_text(aes(label = Value), position = position_dodge(width = 0.9), vjust = -0.5, size = 5) +
   labs(
     x = "",
     y = "",
@@ -367,8 +377,10 @@ ggplot(Funder_mapping_plot_project, aes(x = reorder(Funders, -Value), y = Value,
     panel.grid.major.x = element_blank(),  # Remove major vertical gridlines
     panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
     panel.grid.major.y = element_line(color = "grey"),  # Ensure major horizontal gridlines are displayed
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, margin = margin(t = -5)),  # Increase font size and adjust margin
-    legend.position = "bottom"  # Place legend at the bottom
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 15, margin = margin(t = -5)),  # Increase font size and adjust margin
+    legend.position = "bottom",  # Place legend at the bottom
+    legend.text = element_text(size = 15)
   ) +
   scale_fill_manual(
     name = "",  # Title of the legend
@@ -389,11 +401,10 @@ Funder_mapping_AA_format <- Funder_mapping_amount_arranged %>%
 
 Funder_mapping_top_amount <- Funder_mapping_AA_format %>% slice(1:20)  # Slice top 20 funders by amount
 
-
-# Plot the bar graph using ggplot2
+# Step 4: Plot the bar graph using ggplot2
 ggplot(Funder_mapping_top_amount, aes(x = reorder(Funders, as.numeric(gsub(",", "", Total_Amount_Awarded))), y = as.numeric(gsub(",", "", Total_Amount_Awarded)))) +
   geom_bar(stat = "identity", fill = "#1F78B4") +
-  geom_text(aes(label = Total_Amount_Awarded), hjust = -0.2, color = "black", size = 2) +  # Adjust hjust for horizontal bars
+  geom_text(aes(label = Total_Amount_Awarded), vjust = -0.3, color = "black", size = 3.5) +  # Adjust vjust for vertical bars
   labs(
     x = "",
     y = "",
@@ -401,17 +412,15 @@ ggplot(Funder_mapping_top_amount, aes(x = reorder(Funders, as.numeric(gsub(",", 
   ) +
   theme_minimal() +
   theme(
-    panel.grid.major.x = element_line(color = "grey"),  # Ensure major horizontal gridlines are displayed (after flip)
-    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines (after flip)
-    panel.grid.major.y = element_blank(),  # Remove major vertical gridlines (after flip)
-    axis.text.x = element_blank(),  # Remove x-axis text labels (after flip)
-    axis.text.y = element_text(size = 8, margin = margin(r = -40))  # Increase font size for y-axis labels (funders)
-  ) +
-  coord_flip()  # Flip coordinates
+    panel.grid.major.x = element_blank(),  # Remove major vertical gridlines
+    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
+    panel.grid.major.y = element_line(color = "grey"),  # Ensure major horizontal gridlines are displayed
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 12),  # Increase font size for x-axis labels and rotate them
+    axis.text.y = element_blank(),  # Increase font size for y-axis labels
+    legend.position = "none"  # Hide the legend
+  )
 
-
-
-
+## the big chart
 
 # Plot the bar chart of number of projects per funder
 ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
