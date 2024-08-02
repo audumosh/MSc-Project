@@ -1034,6 +1034,13 @@ replace_research_areas <- function(area) {
 
 
 
+# Function to format numbers to millions with 'm' suffix
+format_to_millions <- Vectorize(function(x) {
+  if (is.na(x)) return(NA)
+  if (x < 1e6) return(as.character(x))
+  paste0(round(x / 1e6), "m")
+})
+
 # Calculate the total amount for ordering
 research_area_analysis <- research_area_analysis %>%
   mutate(Total_Amount = `Amount Awarded for Research Area Alone` + `Amount Awarded when Co-funded with Other Areas`)
@@ -1045,11 +1052,10 @@ research_area_analysis <- research_area_analysis %>%
   mutate(`Research Areas` = sapply(`Research Areas`, replace_research_areas)) %>%
   mutate(`Research Areas` = factor(`Research Areas`))
 
-# Ensure the bar for NA is shown first before other bars
+# Ensure the bar for N/A is shown first before other bars
 research_area_analysis <- research_area_analysis %>%
   arrange(Total_Amount) %>%
   mutate(`Research Areas` = factor(`Research Areas`, levels = c(setdiff(unique(`Research Areas`), "N/A"), "N/A")))
-
 
 # Convert the data to long format for plotting
 research_area_analysis_long <- research_area_analysis %>%
@@ -1062,17 +1068,17 @@ research_area_analysis_long$`Funding Type` <- factor(research_area_analysis_long
 
 # Plot the stacked bar chart
 ggplot(research_area_analysis_long, aes(x = `Research Areas`, y = `Amount Awarded`, fill = `Funding Type`)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = comma(`Amount Awarded`)), position = position_stack(vjust = 0.5), size = 3) +
+  geom_bar(stat = "identity", width = 0.8) +
+  geom_text(aes(label = format_to_millions(`Amount Awarded`)), position = position_stack(vjust = 0.5), size = 4) +
   scale_fill_manual(values = c("Amount Awarded for Research Area Alone" = "#1F78B4", "Amount Awarded when Co-funded with Other Areas" = "#B0BDE0"), 
                     labels = c("Amount Awarded for Research Area Alone" = "Research Area Alone", "Amount Awarded when Co-funded with Other Areas" = "Co-funded with Other Areas"), 
                     name = "") +
   theme_minimal() +
   theme(
-    panel.grid.major.x = element_line(color = "grey"),  # Remove major vertical gridlines
+    panel.grid.major.x = element_line(color = "grey"),  # Ensure major vertical gridlines are displayed
     panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
-    panel.grid.major.y = element_blank(),  # Ensure major horizontal gridlines are displayed
-    axis.text.y = element_text(size = 8),  # Increase font size for y-axis labels (after flip)
+    panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
+    axis.text.y = element_text(size = 10),  # Increase font size for y-axis labels (after flip)
     axis.text.x = element_blank(),  # Remove x-axis text labels (after flip)
     axis.ticks.x = element_blank(),  # Remove x-axis ticks (after flip)
     legend.position = "bottom"
@@ -1082,6 +1088,4 @@ ggplot(research_area_analysis_long, aes(x = `Research Areas`, y = `Amount Awarde
     x = "",
     y = ""
   ) +
-  coord_flip(ylim = c(0, max(research_area_analysis_long$`Amount Awarded`) * 1.3))  # Flip coordinates and elongate bars
-
-
+  coord_flip(ylim = c(0, max(research_area_analysis_long$`Amount Awarded`) * 1.2))  # Flip coordinates and elongate bars
