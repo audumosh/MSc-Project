@@ -27,6 +27,7 @@ PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
   mutate(Amount.Awarded = as.numeric(gsub("[^0-9.]", "", Amount.Awarded)))
 
 
+
 #### Research question 1: What were the primary sources of funding for COVID-19 research conducted in the PAHO region?
 
 ## Descriptive analysis of research projects
@@ -705,7 +706,7 @@ WHO_priority_alignment_long <- WHO_priority_alignment_long %>%
 # Plot the stacked bar chart
 ggplot(WHO_priority_alignment_long, aes(x = Research_areas, y = Count, fill = Focus)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 2.5) +
+  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 4) +
   scale_fill_manual(values = c("Primary_focus" = "#B0BDE0", "Secondary_focus" = "#1F78B4"), 
                     labels = c("Primary_focus" = "Primary area of focus", "Secondary_focus" = "Secondary area of focus"), 
                     name = "") +
@@ -714,6 +715,7 @@ ggplot(WHO_priority_alignment_long, aes(x = Research_areas, y = Count, fill = Fo
     panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
     panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
     axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.text.y = element_text(size = 12),
     legend.position = "bottom"
   ) +
   labs(
@@ -910,7 +912,7 @@ SSOR_long <- SSOR_long %>%
 # Plot the stacked bar chart
 ggplot(SSOR_long, aes(x = Subpriority, y = Count, fill = Priority_type)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 2.5) +
+  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 4) +
   scale_fill_manual(values = c("Primary_subpriority" = "#B0BDE0", "Secondary_subpriority" = "#1F78B4"), 
                     labels = c("Primary_subpriority" = "Primary subpriority area", "Secondary_subpriority" = "Secondary subpriority area"), 
                     name = "") +
@@ -919,6 +921,7 @@ ggplot(SSOR_long, aes(x = Subpriority, y = Count, fill = Priority_type)) +
     panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
     panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
     axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.text.y = element_text(size = 12),
     legend.position = "bottom"
   ) +
   labs(
@@ -962,7 +965,7 @@ AER_long <- AER_long %>%
 # Plot the stacked bar chart
 ggplot(AER_long, aes(x = Subpriority, y = Count, fill = Priority_type)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 2.5) +
+  geom_text(aes(label = ifelse(Count > 0, Count, "")), position = position_stack(vjust = 0.5), size = 4) +
   scale_fill_manual(values = c("Primary_subpriority" = "#B0BDE0", "Secondary_subpriority" = "#1F78B4"), 
                     labels = c("Primary_subpriority" = "Primary subpriority area", "Secondary_subpriority" = "Secondary subpriority area"), 
                     name = "") +
@@ -971,6 +974,7 @@ ggplot(AER_long, aes(x = Subpriority, y = Count, fill = Priority_type)) +
     panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
     panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
     axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.text.y = element_text(size = 12),
     legend.position = "bottom"
   ) +
   labs(
@@ -979,5 +983,105 @@ ggplot(AER_long, aes(x = Subpriority, y = Count, fill = Priority_type)) +
     y = ""
   ) +
   coord_flip()
+
+
+## Calculate funding per research priority area 
+
+# Split the research areas into individual rows
+research_areas_long <- PAHO_COVID_Projects_amt %>%
+  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`))
+
+# Calculate the amount awarded for each research area alone and when co-funded with other areas
+research_area_analysis <- research_areas_long %>%
+  group_by(`Unique.database.reference.number`) %>%
+  summarise(
+    `Research Areas` = list(`PRIMARY.WHO.Research.Priority.Area.Names`),
+    `Amount Awarded` = first(`Amount.Awarded`)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    is_solo = sapply(`Research Areas`, function(x) length(x) == 1),
+    `Research Area` = sapply(`Research Areas`, function(x) ifelse(length(x) == 1, x, NA))
+  ) %>%
+  unnest(`Research Areas`) %>%
+  group_by(`Research Areas`) %>%
+  summarise(
+    `Amount Awarded for Research Area Alone` = sum(`Amount Awarded`[is_solo & `Research Area` == `Research Areas`], na.rm = TRUE),
+    `Amount Awarded when Co-funded with Other Areas` = sum(`Amount Awarded`[!is_solo & `Research Areas` == `Research Areas`], na.rm = TRUE)
+  )
+
+
+
+
+# Custom line breaks for each research area
+custom_research_areas <- c(
+  "Animal and environmental research on the virus origin, and management measures at the human-animal interface" = "Animal and environmental research on the virus origin, \nand management measures at the human-animal interface",
+  "Infection prevention and control, including health care workers’ protection" = "Infection prevention and control, \nincluding health care workers’ protection",
+  "Virus: natural history, transmission and diagnostics" = "Virus: natural history, transmission \nand diagnostics"
+)
+
+# Replace the research area names with custom line breaks
+replace_research_areas <- function(area) {
+  if (area %in% names(custom_research_areas)) {
+    custom_research_areas[[area]]
+  } else {
+    area
+  }
+}
+
+
+
+
+
+# Calculate the total amount for ordering
+research_area_analysis <- research_area_analysis %>%
+  mutate(Total_Amount = `Amount Awarded for Research Area Alone` + `Amount Awarded when Co-funded with Other Areas`)
+
+
+# Convert `Research Areas` to character, apply custom line breaks, then back to factor
+research_area_analysis <- research_area_analysis %>%
+  mutate(`Research Areas` = as.character(`Research Areas`)) %>%
+  mutate(`Research Areas` = sapply(`Research Areas`, replace_research_areas)) %>%
+  mutate(`Research Areas` = factor(`Research Areas`))
+
+# Ensure the bar for NA is shown first before other bars
+research_area_analysis <- research_area_analysis %>%
+  arrange(Total_Amount) %>%
+  mutate(`Research Areas` = factor(`Research Areas`, levels = c(setdiff(unique(`Research Areas`), "N/A"), "N/A")))
+
+
+# Convert the data to long format for plotting
+research_area_analysis_long <- research_area_analysis %>%
+  pivot_longer(cols = c(`Amount Awarded for Research Area Alone`, `Amount Awarded when Co-funded with Other Areas`),
+               names_to = "Funding Type", values_to = "Amount Awarded")
+
+# Adjust the factor levels of Funding Type to control stacking order
+research_area_analysis_long$`Funding Type` <- factor(research_area_analysis_long$`Funding Type`,
+                                                     levels = c("Amount Awarded when Co-funded with Other Areas", "Amount Awarded for Research Area Alone"))
+
+# Plot the stacked bar chart
+ggplot(research_area_analysis_long, aes(x = `Research Areas`, y = `Amount Awarded`, fill = `Funding Type`)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = comma(`Amount Awarded`)), position = position_stack(vjust = 0.5), size = 3) +
+  scale_fill_manual(values = c("Amount Awarded for Research Area Alone" = "#1F78B4", "Amount Awarded when Co-funded with Other Areas" = "#B0BDE0"), 
+                    labels = c("Amount Awarded for Research Area Alone" = "Research Area Alone", "Amount Awarded when Co-funded with Other Areas" = "Co-funded with Other Areas"), 
+                    name = "") +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_line(color = "grey"),  # Remove major vertical gridlines
+    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
+    panel.grid.major.y = element_blank(),  # Ensure major horizontal gridlines are displayed
+    axis.text.y = element_text(size = 8),  # Increase font size for y-axis labels (after flip)
+    axis.text.x = element_blank(),  # Remove x-axis text labels (after flip)
+    axis.ticks.x = element_blank(),  # Remove x-axis ticks (after flip)
+    legend.position = "bottom"
+  ) +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  coord_flip(ylim = c(0, max(research_area_analysis_long$`Amount Awarded`) * 1.3))  # Flip coordinates and elongate bars
 
 
