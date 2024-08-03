@@ -160,6 +160,60 @@ project_count_by_income_2 <- classify_and_count_projects(PAHO_COVID_Projects_cla
 
 #### LMIC vs HIC
 
+# Separate the countries
+projects_long_lmic_funder <- PAHO_COVID_Projects %>%
+  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
+  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`))
+
+# Filter for LMIC countries
+lmic_projects <- projects_long_lmic_funder %>%
+  filter(`Country/.countries.research.are.being.conducted` %in% lmic_countries)
+
+# Aggregate the data to count the number of LMIC countries and the number of projects per funder
+funders_lmic_summary <- lmic_projects %>%
+  group_by(Funders) %>%
+  summarise(
+    Number_of_LMIC_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
+    Number_of_Projects = n_distinct(`Unique.database.reference.number`)
+  ) %>%
+  arrange(desc(Number_of_Projects))
+
+
+
+# Get the top 20 funders
+top_20_funders <- funders_lmic_summary %>% slice(1:20)
+
+# Reshape the data for plotting
+top_20_funders_long <- top_20_funders %>%
+  pivot_longer(cols = c(Number_of_LMIC_Countries, Number_of_Projects), 
+               names_to = "Metric", 
+               values_to = "Value")
+
+# Plot the bar chart
+ggplot(top_20_funders_long, aes(x = reorder(Funders, Value), y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = Value), position = position_dodge(width = 0.9), hjust = -0.3, size = 5, fontface = "bold") +
+  scale_fill_manual(values = c("Number_of_Projects" = "#1F78B4", "Number_of_LMIC_Countries" = "#A6CEE3"), 
+                    labels = c("Number_of_Projects" = "Number of Projects", "Number_of_LMIC_Countries" = "Number of Countries")) +
+  labs(
+    x = "",
+    y = "",
+    fill = ""
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
+    panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
+    axis.text.x = element_text(size = 10),  # Increase font size for x-axis labels
+    axis.text.y = element_text(size = 12, face = "bold", margin = margin(r = 0.001)),  # Increase font size for y-axis labels
+    legend.position = "bottom",  # Place legend at the bottom
+  ) +
+  coord_flip()
+
+
+
+
+
 ### Descriptive analysis of number of funder, research project, and total amount classified by income classification of locations
 
 # Count the number of projects by income classification
