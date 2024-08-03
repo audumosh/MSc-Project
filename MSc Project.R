@@ -158,7 +158,7 @@ project_count_by_income <- classify_and_count_projects(PAHO_COVID_Projects)
 project_count_by_income_2 <- classify_and_count_projects(PAHO_COVID_Projects_classify)
 
 
-
+#### LMIC vs HIC
 
 ### Descriptive analysis of number of funder, research project, and total amount classified by income classification of locations
 
@@ -334,6 +334,60 @@ if (length(hic_data) < 3 | length(lmics_data) < 3) {
     print(wilcox_test_result)
   }
 }
+
+
+### map projects to priority areas across incomes 
+# Group by income classification and research focus area, then count the number of projects
+projects_by_focus <- PAHO_COVID_Projects %>%
+  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`)) %>%
+  group_by(`Income.classification`, `PRIMARY.WHO.Research.Priority.Area.Names`) %>%
+  summarise(Number_of_Projects = n()) %>%
+  ungroup()
+
+
+# Manually break the text labels
+projects_by_focus <- projects_by_focus %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = case_when(
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Animal and environmental research on the virus origin, and management measures at the human-animal interface" ~ "Animal and environmental research on the virus origin, \nand management measures at the human-animal interface",
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Infection prevention and control, including health care workers’ protection" ~ "Infection prevention and control, \nincluding health care workers’ protection",
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Virus: natural history, transmission and diagnostics" ~ "Virus: natural history, \ntransmission and diagnostics",
+    TRUE ~ `PRIMARY.WHO.Research.Priority.Area.Names`
+  ))
+
+
+# Reorder the factor levels to display N/A first
+projects_by_focus <- projects_by_focus %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = fct_relevel(`PRIMARY.WHO.Research.Priority.Area.Names`, "N/A"))
+
+
+# Define custom colors for the income classifications
+custom_colors <- c("Only HIC" = "#6BAED6" , "Only LMIC" = "#A6CEE3", "Both HIC and LMIC" = "red")
+
+# Plot the number of projects by research focus area and income classification
+ggplot(projects_by_focus, aes(x = `PRIMARY.WHO.Research.Priority.Area.Names`, y = Number_of_Projects, fill = `Income.classification`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = Number_of_Projects), position = position_dodge(width = 0.9), hjust = -0.3, size = 5) +
+  labs(title = "", x = "", y = "") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(angle = 0, hjust = 1, size = 12, vjust = 0.5),
+    panel.grid.major.y = element_blank(),  # Remove major y gridlines
+    panel.grid.minor.y = element_blank(),  # Remove minor y gridlines
+    legend.position = "bottom",  # Place legend at the bottom
+    legend.title = element_blank()  # Remove the legend title
+  ) +
+  coord_flip() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +  # Ensure enough space for labels
+  scale_fill_manual(values = custom_colors)  # Apply custom colors
+
+
+
+
+
+
+
+
 
 
 
