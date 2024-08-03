@@ -1041,6 +1041,15 @@ format_to_millions <- Vectorize(function(x) {
   paste0(round(x / 1e6), "m")
 })
 
+# Custom function to determine text angle based on condition
+angle_text <- function(amount) {
+  if (amount < 25000000) return(90)  # Flip text for values less than 25 million
+  return(0)  # Keep text as is for other values
+}
+
+# Vectorize the custom function
+angle_text_vectorized <- Vectorize(angle_text)
+
 # Calculate the total amount for ordering
 research_area_analysis <- research_area_analysis %>%
   mutate(Total_Amount = `Amount Awarded for Research Area Alone` + `Amount Awarded when Co-funded with Other Areas`)
@@ -1069,7 +1078,8 @@ research_area_analysis_long$`Funding Type` <- factor(research_area_analysis_long
 # Plot the stacked bar chart
 ggplot(research_area_analysis_long, aes(x = `Research Areas`, y = `Amount Awarded`, fill = `Funding Type`)) +
   geom_bar(stat = "identity", width = 0.8) +
-  geom_text(aes(label = format_to_millions(`Amount Awarded`)), position = position_stack(vjust = 0.5), size = 4) +
+  geom_text(aes(label = format_to_millions(`Amount Awarded`), angle = angle_text_vectorized(`Amount Awarded`)), 
+            position = position_stack(vjust = 0.5), size = 4, hjust = ifelse(research_area_analysis_long$`Amount Awarded` < 25000000, 1, 0.5), fontface = "bold") +  # Set text to bold
   scale_fill_manual(values = c("Amount Awarded for Research Area Alone" = "#1F78B4", "Amount Awarded when Co-funded with Other Areas" = "#B0BDE0"), 
                     labels = c("Amount Awarded for Research Area Alone" = "Research Area Alone", "Amount Awarded when Co-funded with Other Areas" = "Co-funded with Other Areas"), 
                     name = "") +
@@ -1078,7 +1088,7 @@ ggplot(research_area_analysis_long, aes(x = `Research Areas`, y = `Amount Awarde
     panel.grid.major.x = element_line(color = "grey"),  # Ensure major vertical gridlines are displayed
     panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
     panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
-    axis.text.y = element_text(size = 10),  # Increase font size for y-axis labels (after flip)
+    axis.text.y = element_text(size = 12),  # Increase font size for y-axis labels (after flip)
     axis.text.x = element_blank(),  # Remove x-axis text labels (after flip)
     axis.ticks.x = element_blank(),  # Remove x-axis ticks (after flip)
     legend.position = "bottom"
@@ -1088,4 +1098,4 @@ ggplot(research_area_analysis_long, aes(x = `Research Areas`, y = `Amount Awarde
     x = "",
     y = ""
   ) +
-  coord_flip(ylim = c(0, max(research_area_analysis_long$`Amount Awarded`) * 1.2))  # Flip coordinates and elongate bars
+  coord_flip(ylim = c(0, max(research_area_analysis_long$`Amount Awarded`) * 1.3))  # Flip coordinates and elongate bars
