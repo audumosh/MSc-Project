@@ -99,6 +99,8 @@ unique_countries <- Income_level_separated %>%
   ) %>%
   ungroup()
 
+# Write the unique countries to an Excel file
+write_xlsx(unique_countries, "unique_countries.xlsx")
 
 # Rename columns
 colnames(unique_countries) <- c("Income Classification", "Number of Countries", "List of Countries")
@@ -327,7 +329,7 @@ ggplot(final_table_long, aes(x = `Income.classification`, y = Count, fill = Metr
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank(), # Remove major y gridlines
     panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(angle = 360, hjust = 0.5, size = 12, face = "bold"),  # Bolden the x-axis labels and center them
+    axis.text.x = element_text(angle = 360, hjust = 0.5, size = 15, face = "bold"),  # Bolden the x-axis labels and center them
     axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
     panel.grid = element_blank(), # Ensure all gridlines are removed
@@ -416,7 +418,7 @@ projects_by_focus <- projects_by_focus %>%
 
 
 # Define custom colors for the income classifications
-custom_colors <- c("Only HIC" = "#6BAED6" , "Only LMIC" = "#A6CEE3", "Both HIC and LMIC" = "red")
+custom_colors <- c("Only HIC" = "#1F78B4" , "Only LMIC" = "#A6CEE3", "Both HIC and LMIC" = "red")
 
 # Plot the number of projects by research focus area and income classification
 ggplot(projects_by_focus, aes(x = `PRIMARY.WHO.Research.Priority.Area.Names`, y = Number_of_Projects, fill = `Income.classification`)) +
@@ -425,7 +427,7 @@ ggplot(projects_by_focus, aes(x = `PRIMARY.WHO.Research.Priority.Area.Names`, y 
   labs(title = "", x = "", y = "") +
   theme_minimal() +
   theme(
-    axis.text.y = element_text(angle = 0, hjust = 1, size = 12, vjust = 0.5),
+    axis.text.y = element_text(angle = 0, hjust = 1, size = 15, vjust = 0.5),
     panel.grid.major.y = element_blank(),  # Remove major y gridlines
     panel.grid.minor.y = element_blank(),  # Remove minor y gridlines
     legend.position = "bottom",  # Place legend at the bottom
