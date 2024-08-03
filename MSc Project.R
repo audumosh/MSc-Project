@@ -382,12 +382,76 @@ ggplot(projects_by_focus, aes(x = `PRIMARY.WHO.Research.Priority.Area.Names`, y 
   scale_fill_manual(values = custom_colors)  # Apply custom colors
 
 
+### map amount to priority areas across incomes
+
+# Group by income classification and research focus area, then sum the amount awarded
+amount_by_focus <- PAHO_COVID_Projects %>%
+  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`)) %>%
+  group_by(`Income.classification`, `PRIMARY.WHO.Research.Priority.Area.Names`) %>%
+  summarise(Total_Amount_Awarded = sum(`Amount.Awarded`, na.rm = TRUE)) %>%
+  ungroup()
+
+# Manually break the text labels
+amount_by_focus <- amount_by_focus %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = case_when(
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Animal and environmental research on the virus origin, and management measures at the human-animal interface" ~ "Animal and environmental research on the virus origin, \nand management measures at the human-animal interface",
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Infection prevention and control, including health care workers’ protection" ~ "Infection prevention and control, \nincluding health care workers’ protection",
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Virus: natural history, transmission and diagnostics" ~ "Virus: natural history, \ntransmission and diagnostics",
+    TRUE ~ `PRIMARY.WHO.Research.Priority.Area.Names`
+  ))
+
+# Reorder the factor levels to display N/A first
+amount_by_focus <- amount_by_focus %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = fct_relevel(`PRIMARY.WHO.Research.Priority.Area.Names`, "N/A"))
+
+# Define custom colors for the income classifications
+custom_colors <- c("Only HIC" = "#6BAED6" , "Only LMIC" = "#A6CEE3", "Both HIC and LMIC" = "red")
+
+# Plot the amount awarded by research focus area and income classification
+ggplot(amount_by_focus, aes(x = `PRIMARY.WHO.Research.Priority.Area.Names`, y = Total_Amount_Awarded, fill = `Income.classification`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = scales::comma(Total_Amount_Awarded)), position = position_dodge(width = 0.9), hjust = -0.3, size = 5) +
+  labs(title = "", x = "", y = "") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(angle = 0, hjust = 1, size = 12, vjust = 0.5),
+    panel.grid.major.y = element_blank(),  # Remove major y gridlines
+    panel.grid.minor.y = element_blank(),  # Remove minor y gridlines
+    legend.position = "bottom",  # Place legend at the bottom
+    legend.title = element_blank()  # Remove the legend title
+  ) +
+  coord_flip() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +  # Ensure enough space for labels
+  scale_fill_manual(values = custom_colors)  # Apply custom colors
+
+## plot heatmap
 
 
+# Determine text color based on the value (set threshold to 35,000,000)
+amount_by_focus <- amount_by_focus %>%
+  mutate(text_color = ifelse(Total_Amount_Awarded > 35000000, "white", "black"))
 
-
-
-
+# Plot the heatmap for the amount awarded by research focus area and income classification
+ggplot(amount_by_focus, aes(x = `Income.classification`, y = `PRIMARY.WHO.Research.Priority.Area.Names`, fill = Total_Amount_Awarded)) +
+  geom_tile(color = "black", size = 0.3) +
+  geom_text(aes(label = paste0("$", scales::comma(Total_Amount_Awarded)), color = text_color), fontface = "bold") +
+  scale_fill_gradient(low = "lightgrey", high = "black", na.value = "white",  guide = guide_colorbar(barwidth = 30)) +
+  scale_color_identity() +  # Use the colors specified in the dataframe
+  scale_x_discrete(position = "top") +  # Move x-axis labels to the top
+  labs(title = "", x = "", y = "", fill = "Amount Awarded") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(angle = 0, hjust = 1, size = 12, vjust = 0.5),
+    axis.text.x = element_text(size = 12, face = "bold", vjust = 1, hjust = 0.5),  # Adjust font size for x-axis labels and position them at the top
+    axis.title.x = element_blank(),  # Remove x-axis title
+    axis.ticks.x = element_blank(),  # Remove x-axis ticks
+    panel.grid.major = element_blank(),  # Remove major gridlines
+    panel.grid.minor = element_blank(),  # Remove minor gridlines
+    legend.position = "bottom",  # Place legend at the bottom
+    panel.border = element_rect(color = "black", fill = NA, size = 1)  # Add outer borders
+  ) +
+  scale_y_discrete(expand = expansion(mult = c(0, 0.1)))  # Ensure enough space for labels
 
 
 
