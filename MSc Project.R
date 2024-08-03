@@ -157,7 +157,10 @@ project_count_by_income <- classify_and_count_projects(PAHO_COVID_Projects)
 # Perform the classification and count
 project_count_by_income_2 <- classify_and_count_projects(PAHO_COVID_Projects_classify)
 
-# Descriptive analysis of number of research project conducted classified by income classification of locations
+
+
+
+### Descriptive analysis of number of funder, research project, and total amount classified by income classification of locations
 
 # Count the number of projects by income classification
 Project_Income_classification <- PAHO_COVID_Projects %>%
@@ -172,41 +175,14 @@ Project_Income_classification <- Project_Income_classification %>%
 # Format the proportions to percentage
 Project_Income_classification <- Project_Income_classification %>%
   mutate(
-    Proportion = scales::percent(Proportion)
+    Proportion = scales::percent(Proportion, accuracy = 0.1)
   )
+
 
 # Perform chi-squared test to check for statistical significance between HIC and Not-HIC projects
 chisq_test <- chisq.test(Project_Income_classification$Projects)
 print(chisq_test)
 
-
-# Plot the bar chart
-ggplot(Project_Income_classification, aes(x = `Income.classification`, y = Projects, label = paste0(Projects, " (", Proportion, ")"))) +
-  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
-  geom_text(aes(label = paste0(Projects, " (", Proportion, ")")), vjust = -0.5, size = 5) +
-  theme_minimal() +
-  theme(
-    panel.grid.major = element_blank(), 
-    panel.grid.minor = element_blank(),
-    panel.grid.major.y = element_blank(), # Remove major y gridlines
-    panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(angle = 360, hjust = 1, size = 12),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    panel.grid = element_blank(), # Ensure all gridlines are removed
-    axis.line.y = element_line(color = "grey") # Add a line for the y-axis
-  ) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
-  labs(
-    title = "",
-    x = "Income Classification",
-    y = "Number of Projects"
-  ) +
-  geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
-
-
-
-## descriptive and statistical analyses of number of funders and total amount awarded mapped to country income levels
 
 # Count total number of unique funders
 total_funders <- n_distinct(PAHO_COVID_Projects$Funders)
@@ -223,10 +199,99 @@ funders_per_income_classification_1 <- PAHO_COVID_Projects %>%
   ) %>%
   mutate(
     Proportion_of_Total_Funds = scales::percent(Proportion_of_Total_Funds)
-  ) %>%
-  mutate(
-    Total_Amount_Awarded = sapply(Total_Amount_Awarded, format_amount)
   )
+
+## Calculate and plot bar graph of funding allocation to income levels
+
+# Select only the necessary columns
+funding_allocation <- funders_per_income_classification_1 %>%
+  select(`Income.classification`, Total_Amount_Awarded, Proportion_of_Total_Funds)
+
+# Reorder the Income.classification factor based on amount in descending order
+funding_allocation <- funding_allocation %>%
+  mutate(`Income.classification` = fct_reorder(`Income.classification`, Total_Amount_Awarded))
+
+
+# Plot the bar chart
+ggplot(funding_allocation, aes(x = `Income.classification`, y = Total_Amount_Awarded, label = paste0(Total_Amount_Awarded, " (", Proportion_of_Total_Funds, ")"))) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black", width = 0.5) +  # Reduce the width of the bars
+  geom_text(aes(label = paste0(scales::comma(Total_Amount_Awarded), " (", Proportion_of_Total_Funds, ")")), vjust = -0.5, size = 5, fontface = "bold") +  # Bolden the text
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(), # Remove major y gridlines
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 360, hjust = 0.5, size = 12, face = "bold"),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid = element_blank(), # Ensure all gridlines are removed
+    axis.line.y = element_line(color = "grey") # Add a line for the y-axis
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
+
+
+
+
+## Calculate and plot bar graph of number of projects and funders to income levels
+
+Ana_for_plot <- full_join(funders_per_income_classification_1, Project_Income_classification, by = "Income.classification")
+
+
+# Select only the necessary columns
+final_table <- Ana_for_plot %>%
+  select(`Income.classification`, Funders, Projects)
+
+# Reshape the data to long format
+final_table_long <- final_table %>%
+  pivot_longer(cols = c(Funders, Projects), names_to = "Metric", values_to = "Count")
+
+# Reorder the Income.classification factor based on Projects in descending order
+final_table_long <- final_table_long %>%
+  group_by(`Income.classification`) %>%
+  mutate(Max_Projects = max(Count[Metric == "Projects"])) %>%
+  ungroup() %>%
+  mutate(`Income.classification` = fct_reorder(`Income.classification`, -Max_Projects)) %>%
+  select(-Max_Projects)
+
+# Adjust the order of the Metric factor to ensure Projects are on the left
+final_table_long$Metric <- factor(final_table_long$Metric, levels = c("Projects", "Funders"))
+
+# Plot the bar chart
+ggplot(final_table_long, aes(x = `Income.classification`, y = Count, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7), width = 0.5) +  # Adjust the width of the bars
+  geom_text(aes(label = Count), position = position_dodge(width = 0.7), vjust = -0.5, size = 5, fontface = "bold") +  # Bolden the text
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(), # Remove major y gridlines
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 360, hjust = 0.5, size = 12, face = "bold"),  # Bolden the x-axis labels and center them
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid = element_blank(), # Ensure all gridlines are removed
+    axis.line.y = element_line(color = "grey"), # Add a line for the y-axis
+    legend.position = "bottom"
+  ) +
+  scale_fill_manual(values = c("Projects" = "#1F78B4", "Funders" = "skyblue"), 
+                    labels = c("Projects" = "Number of projects", "Funders" = "Number of funders"),  # Change legend names
+                    name = "") +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
+
+
 
 # Statiscal analysis to compare amount awarded between HIC and LMIC
 
