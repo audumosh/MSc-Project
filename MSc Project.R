@@ -491,15 +491,15 @@ amount_by_focus <- amount_by_focus %>%
 # Plot the heatmap for the amount awarded by research focus area and income classification
 ggplot(amount_by_focus, aes(x = `Income.classification`, y = `PRIMARY.WHO.Research.Priority.Area.Names`, fill = Total_Amount_Awarded)) +
   geom_tile(color = "black", size = 0.3) +
-  geom_text(aes(label = paste0("$", scales::comma(Total_Amount_Awarded)), color = text_color), fontface = "bold") +
+  geom_text(aes(label = paste0("$", scales::comma(Total_Amount_Awarded)), color = text_color), size = 7, fontface = "bold") +
   scale_fill_gradient(low = "lightgrey", high = "black", na.value = "white",  guide = guide_colorbar(barwidth = 30)) +
   scale_color_identity() +  # Use the colors specified in the dataframe
   scale_x_discrete(position = "top") +  # Move x-axis labels to the top
   labs(title = "", x = "", y = "", fill = "Amount Awarded") +
   theme_minimal() +
   theme(
-    axis.text.y = element_text(angle = 0, hjust = 1, size = 12, vjust = 0.5),
-    axis.text.x = element_text(size = 12, face = "bold", vjust = 1, hjust = 0.5),  # Adjust font size for x-axis labels and position them at the top
+    axis.text.y = element_text(angle = 0, hjust = 1, size = 17, vjust = 0.5),
+    axis.text.x = element_text(size = 17, face = "bold", vjust = 1, hjust = 0.5),  # Adjust font size for x-axis labels and position them at the top
     axis.title.x = element_blank(),  # Remove x-axis title
     axis.ticks.x = element_blank(),  # Remove x-axis ticks
     panel.grid.major = element_blank(),  # Remove major gridlines
