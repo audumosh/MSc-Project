@@ -27,10 +27,9 @@ PAHO_COVID_Projects <- PAHO_COVID_Projects %>%
   mutate(Amount.Awarded = as.numeric(gsub("[^0-9.]", "", Amount.Awarded)))
 
 
+#### Research question 1: To what extent did the funded COVID-19 research activities in the Americas align with WHO priorities?
 
-#### Research question 1: What were the primary sources of funding for COVID-19 research conducted in the PAHO region?
-
-## Descriptive analysis of research projects
+### Descriptive analysis of research projects: Total no of projects, single vs multicountry projects
 
 # Count total number of projects
 total_projects <- nrow(PAHO_COVID_Projects)
@@ -56,752 +55,11 @@ summary_of_project_location <- data.frame(
 )
 
 
-# Descriptive analysis of the number of countries where research are being conducted classified by income levels
-
-# Define income classifications
-hic_countries <- c("Canada", "USA", "Guyana", "Panama", "Chile", "Uruguay", 
-                   "Trinidad and Tobago", "Barbados", "Bahamas", "Saint Kitts and Nevis", 
-                   "Antigua and Barbuda", "Virgin Islands (british)", "Turks and Caicos Islands", 
-                   "Aruba", "Guadeloupe", "Cayman Islands", "Curaçao", "French Guiana", 
-                   "Martinique", "Montserrat", "Puerto Rico", "St. Maarten")
-
-lmic_countries <- c("Belize", "Dominican Republic", "Jamaica", "Suriname", "Colombia", 
-                    "Ecuador", "Peru", "Paraguay", "Venezuela", "Mexico", "Argentina", 
-                    "Grenada", "Costa Rica", "Saint Lucia", "Saint Vincent and the Grenadines", 
-                    "Dominica", "Brazil", "Honduras", "Nicaragua", "Guatemala", "El Salvador", 
-                    "Bolivia", "Cuba", "Haiti")
-
-
-# Function to get the list of countries by income classification
-get_income_countries <- function(countries, income_list) {
-  country_list <- unlist(strsplit(countries, ","))
-  country_list <- trimws(country_list)
-  return(intersect(country_list, income_list))
-}
-
-# Separate the countries into HIC and LMIC
-Income_level_separated <- PAHO_COVID_Projects %>%
-  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
-  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`)) %>%
-  mutate(Income_Classification = case_when(
-    `Country/.countries.research.are.being.conducted` %in% hic_countries ~ "HIC",
-    `Country/.countries.research.are.being.conducted` %in% lmic_countries ~ "LMIC",
-    TRUE ~ NA_character_
-  ))
-
-# Summarize the data by income classification
-unique_countries <- Income_level_separated %>%
-  filter(!is.na(Income_Classification)) %>%
-  group_by(Income_Classification) %>%
-  summarise(
-    Number_of_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
-    List_of_Countries = paste(sort(unique(`Country/.countries.research.are.being.conducted`)), collapse = ", ")
-  ) %>%
-  ungroup()
-
-# Write the unique countries to an Excel file
-write_xlsx(unique_countries, "unique_countries.xlsx")
-
-# Rename columns
-colnames(unique_countries) <- c("Income Classification", "Number of Countries", "List of Countries")
-
-
-# Define unique income classifications
-
-income_classification_list <- list(
-"High-income" = c("Anguilla", "Bermuda", "Canada", "USA", "Guyana", "Panama", "Chile", "Uruguay", 
-                   "Trinidad and Tobago", "Barbados", "Bahamas", "Saint Kitts and Nevis", 
-                   "Antigua and Barbuda", "Virgin Islands (british)", "Turks and Caicos Islands", 
-                   "Aruba", "Guadeloupe", "Cayman Islands", "Curaçao", "French Guiana", 
-                   "Martinique", "Montserrat", "Puerto Rico", "St. Maarten"),
-
-"Upper-middle" = c("Belize", "Dominican Republic", "Jamaica", "Suriname", "Colombia", 
-                    "Ecuador", "Peru", "Paraguay", "Mexico", "Argentina", 
-                    "Grenada", "Costa Rica", "Saint Lucia", "Saint Vincent and the Grenadines", 
-                    "Dominica", "Brazil", "Honduras", "Guatemala", "El Salvador", "Cuba"),
-                    
-"Lower-middle" = c("Venezuela", "Honduras", "Nicaragua", "Bolivia", "Haiti")
-)                 
-
-# Function to classify a country based on the predefined list
-classify_country <- function(country) {
-  for (income_class in names(income_classification_list)) {
-    if (country %in% income_classification_list[[income_class]]) {
-      return(income_class)
-    }
-  }
-  return(NA) # Return NA if the country is not found in the list
-}
-
-
-# Function to classify countries and count projects
-classify_and_count_projects <- function(PAHO_COVID_Projects_classify) {
-  # Split countries into individual rows
-  PAHO_COVID_Projects_classify <- PAHO_COVID_Projects %>%
-    separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
-    rename(Country = `Country/.countries.research.are.being.conducted`)
-  
-  # Classify each country
-  PAHO_COVID_Projects_classify <- PAHO_COVID_Projects_classify %>%
-    mutate(`Income Classification New` = sapply(Country, classify_country))
-  
-  # Count the number of projects per income classification
-  project_count <- PAHO_COVID_Projects_classify %>%
-    group_by(`Income Classification New`) %>%
-    summarise(Projects = n_distinct(`Unique.database.reference.number`))
-  
-  return(project_count)
-}
-
-# Perform the classification and count
-project_count_by_income <- classify_and_count_projects(PAHO_COVID_Projects)
-
-# Perform the classification and count
-project_count_by_income_2 <- classify_and_count_projects(PAHO_COVID_Projects_classify)
-
-
-#### LMIC vs HIC
-
-# Separate the countries
-projects_long_lmic_funder <- PAHO_COVID_Projects %>%
-  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
-  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`))
-
-# Filter for LMIC countries
-lmic_projects <- projects_long_lmic_funder %>%
-  filter(`Country/.countries.research.are.being.conducted` %in% lmic_countries)
-
-# Aggregate the data to count the number of LMIC countries and the number of projects per funder
-funders_lmic_summary <- lmic_projects %>%
-  group_by(Funders) %>%
-  summarise(
-    Number_of_LMIC_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
-    Number_of_Projects = n_distinct(`Unique.database.reference.number`)
-  ) %>%
-  arrange(desc(Number_of_Projects))
-
-# Write the LMIC funders to an Excel file
-write_xlsx(funders_lmic_summary, "funders_lmic_summary.xlsx")
-
-# Get the top 20 funders
-top_20_funders <- funders_lmic_summary %>% slice(1:20)
-
-# Reshape the data for plotting
-top_20_funders_long <- top_20_funders %>%
-  pivot_longer(cols = c(Number_of_LMIC_Countries, Number_of_Projects), 
-               names_to = "Metric", 
-               values_to = "Value")
-
-# Plot the bar chart
-ggplot(top_20_funders_long, aes(x = reorder(Funders, Value), y = Value, fill = Metric)) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
-  geom_text(aes(label = Value), position = position_dodge(width = 0.9), hjust = -0.3, size = 5, fontface = "bold") +
-  scale_fill_manual(values = c("Number_of_Projects" = "#1F78B4", "Number_of_LMIC_Countries" = "#A6CEE3"), 
-                    labels = c("Number_of_Projects" = "Number of Projects", "Number_of_LMIC_Countries" = "Number of Countries")) +
-  labs(
-    x = "",
-    y = "",
-    fill = ""
-  ) +
-  theme_minimal() +
-  theme(
-    panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
-    panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
-    axis.text.x = element_text(size = 10),  # Increase font size for x-axis labels
-    axis.text.y = element_text(size = 12, face = "bold", margin = margin(r = 0.001)),  # Increase font size for y-axis labels
-    legend.position = "bottom",  # Place legend at the bottom
-  ) +
-  coord_flip()
-
-
-
-
-
-### Descriptive analysis of number of funder, research project, and total amount classified by income classification of locations
-
-# Count the number of projects by income classification
-Project_Income_classification <- PAHO_COVID_Projects %>%
-  group_by(`Income.classification`) %>%
-  summarise(Projects = n()) %>%
-  ungroup()
-
-# Calculate proportions
-Project_Income_classification <- Project_Income_classification %>%
-  mutate(Proportion = Projects / sum(Projects))
-
-# Format the proportions to percentage
-Project_Income_classification <- Project_Income_classification %>%
-  mutate(
-    Proportion = scales::percent(Proportion, accuracy = 0.1)
-  )
-
-
-# Perform chi-squared test to check for statistical significance between HIC and Not-HIC projects
-chisq_test <- chisq.test(Project_Income_classification$Projects)
-print(chisq_test)
-
-
-# Count total number of unique funders
-total_funders <- n_distinct(PAHO_COVID_Projects$Funders)
-
-
-# Disaggregate by income classification
-funders_per_income_classification_1 <- PAHO_COVID_Projects %>%
-  group_by(`Income.classification`) %>%
-  summarise(
-    Funders = n_distinct(Funders),
-    Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE))%>%
-  mutate(
-    Proportion_of_Total_Funds = Total_Amount_Awarded / sum(Total_Amount_Awarded)
-  ) %>%
-  mutate(
-    Proportion_of_Total_Funds = scales::percent(Proportion_of_Total_Funds)
-  )
-
-## Calculate and plot bar graph of funding allocation to income levels
-
-# Select only the necessary columns
-funding_allocation <- funders_per_income_classification_1 %>%
-  select(`Income.classification`, Total_Amount_Awarded, Proportion_of_Total_Funds)
-
-# Reorder the Income.classification factor based on amount in descending order
-funding_allocation <- funding_allocation %>%
-  mutate(`Income.classification` = fct_reorder(`Income.classification`, Total_Amount_Awarded))
-
-
-# Plot the bar chart
-ggplot(funding_allocation, aes(x = `Income.classification`, y = Total_Amount_Awarded, label = paste0(Total_Amount_Awarded, " (", Proportion_of_Total_Funds, ")"))) +
-  geom_bar(stat = "identity", fill = "skyblue", color = "black", width = 0.5) +  # Reduce the width of the bars
-  geom_text(aes(label = paste0(scales::comma(Total_Amount_Awarded), " (", Proportion_of_Total_Funds, ")")), vjust = -0.5, size = 5, fontface = "bold") +  # Bolden the text
-  theme_minimal() +
-  theme(
-    panel.grid.major = element_blank(), 
-    panel.grid.minor = element_blank(),
-    panel.grid.major.y = element_blank(), # Remove major y gridlines
-    panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(angle = 360, hjust = 0.5, size = 12, face = "bold"),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    panel.grid = element_blank(), # Ensure all gridlines are removed
-    axis.line.y = element_line(color = "grey") # Add a line for the y-axis
-  ) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
-  labs(
-    title = "",
-    x = "",
-    y = ""
-  ) +
-  geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
-
-
-
-
-## Calculate and plot bar graph of number of projects and funders to income levels
-
-Ana_for_plot <- full_join(funders_per_income_classification_1, Project_Income_classification, by = "Income.classification")
-
-
-# Select only the necessary columns
-final_table <- Ana_for_plot %>%
-  select(`Income.classification`, Funders, Projects)
-
-# Reshape the data to long format
-final_table_long <- final_table %>%
-  pivot_longer(cols = c(Funders, Projects), names_to = "Metric", values_to = "Count")
-
-# Reorder the Income.classification factor based on Projects in descending order
-final_table_long <- final_table_long %>%
-  group_by(`Income.classification`) %>%
-  mutate(Max_Projects = max(Count[Metric == "Projects"])) %>%
-  ungroup() %>%
-  mutate(`Income.classification` = fct_reorder(`Income.classification`, -Max_Projects)) %>%
-  select(-Max_Projects)
-
-# Adjust the order of the Metric factor to ensure Projects are on the left
-final_table_long$Metric <- factor(final_table_long$Metric, levels = c("Projects", "Funders"))
-
-# Plot the bar chart
-ggplot(final_table_long, aes(x = `Income.classification`, y = Count, fill = Metric)) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.7), width = 0.5) +  # Adjust the width of the bars
-  geom_text(aes(label = Count), position = position_dodge(width = 0.7), vjust = -0.5, size = 5, fontface = "bold") +  # Bolden the text
-  theme_minimal() +
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major.y = element_blank(), # Remove major y gridlines
-    panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(angle = 360, hjust = 0.5, size = 15, face = "bold"),  # Bolden the x-axis labels and center them
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    panel.grid = element_blank(), # Ensure all gridlines are removed
-    axis.line.y = element_line(color = "grey"), # Add a line for the y-axis
-    legend.position = "bottom"
-  ) +
-  scale_fill_manual(values = c("Projects" = "#1F78B4", "Funders" = "skyblue"), 
-                    labels = c("Projects" = "Number of projects", "Funders" = "Number of funders"),  # Change legend names
-                    name = "") +
-  labs(
-    title = "",
-    x = "",
-    y = ""
-  ) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
-  geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
-
-
-
-# Statiscal analysis to compare amount awarded between HIC and LMIC
-
-# Filter data for only HIC and only LMIC
-hic_data <- PAHO_COVID_Projects %>%
-  filter(`Income.classification` == "Only HIC") %>%
-  pull(`Amount.Awarded`)
-
-lmics_data <- PAHO_COVID_Projects %>%
-  filter(`Income.classification` == "Only LMIC") %>%
-  pull(`Amount.Awarded`)
-
-# Check sample sizes
-cat("Sample size for HIC data:", length(hic_data), "\n")
-cat("Sample size for LMIC data:", length(lmics_data), "\n")
-
-# Ensure there are at least 3 data points in each sample for statistical testing
-if (length(hic_data) < 3 | length(lmics_data) < 3) {
-  cat("Not enough data points for statistical testing.\n")
-} else {
-  # Check for normality using Shapiro-Wilk test
-  shapiro_hic <- shapiro.test(sample(hic_data, min(length(hic_data), 5000))) # Sample max 5000 points for Shapiro test
-  shapiro_lmics <- shapiro.test(lmics_data)
-  
-  cat("Shapiro-Wilk test for HIC data:\n")
-  print(shapiro_hic)
-  cat("Shapiro-Wilk test for LMIC data:\n")
-  print(shapiro_lmics)
-  
-  # Choose the test based on normality results
-  if (shapiro_hic$p.value > 0.05 & shapiro_lmics$p.value > 0.05) {
-    # If both samples are normally distributed, use the t-test
-    t_test_result <- t.test(hic_data, lmics_data)
-    cat("Two-sample t-test result:\n")
-    print(t_test_result)
-  } else {
-    # If samples are not normally distributed, use the Wilcoxon rank-sum test
-    wilcox_test_result <- wilcox.test(hic_data, lmics_data)
-    cat("Wilcoxon rank-sum test result:\n")
-    print(wilcox_test_result)
-  }
-}
-
-
-### map projects to priority areas across incomes 
-# Group by income classification and research focus area, then count the number of projects
-projects_by_focus <- PAHO_COVID_Projects %>%
-  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
-  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`)) %>%
-  group_by(`Income.classification`, `PRIMARY.WHO.Research.Priority.Area.Names`) %>%
-  summarise(Number_of_Projects = n()) %>%
-  ungroup()
-
-
-# Manually break the text labels
-projects_by_focus <- projects_by_focus %>%
-  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = case_when(
-    `PRIMARY.WHO.Research.Priority.Area.Names` == "Animal and environmental research on the virus origin, and management measures at the human-animal interface" ~ "Animal and environmental research on the virus origin, \nand management measures at the human-animal interface",
-    `PRIMARY.WHO.Research.Priority.Area.Names` == "Infection prevention and control, including health care workers’ protection" ~ "Infection prevention and control, \nincluding health care workers’ protection",
-    `PRIMARY.WHO.Research.Priority.Area.Names` == "Virus: natural history, transmission and diagnostics" ~ "Virus: natural history, \ntransmission and diagnostics",
-    TRUE ~ `PRIMARY.WHO.Research.Priority.Area.Names`
-  ))
-
-
-# Reorder the factor levels to display N/A first
-projects_by_focus <- projects_by_focus %>%
-  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = fct_relevel(`PRIMARY.WHO.Research.Priority.Area.Names`, "N/A"))
-
-
-# Define custom colors for the income classifications
-custom_colors <- c("Only HIC" = "#1F78B4" , "Only LMIC" = "#A6CEE3", "Both HIC and LMIC" = "red")
-
-# Plot the number of projects by research focus area and income classification
-ggplot(projects_by_focus, aes(x = `PRIMARY.WHO.Research.Priority.Area.Names`, y = Number_of_Projects, fill = `Income.classification`)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label = Number_of_Projects), position = position_dodge(width = 0.9), hjust = -0.3, size = 5) +
-  labs(title = "", x = "", y = "") +
-  theme_minimal() +
-  theme(
-    axis.text.y = element_text(angle = 0, hjust = 1, size = 15, vjust = 0.5),
-    panel.grid.major.y = element_blank(),  # Remove major y gridlines
-    panel.grid.minor.y = element_blank(),  # Remove minor y gridlines
-    legend.position = "bottom",  # Place legend at the bottom
-    legend.title = element_blank()  # Remove the legend title
-  ) +
-  coord_flip() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +  # Ensure enough space for labels
-  scale_fill_manual(values = custom_colors)  # Apply custom colors
-
-
-### map amount to priority areas across incomes
-
-# Group by income classification and research focus area, then sum the amount awarded
-amount_by_focus <- PAHO_COVID_Projects %>%
-  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
-  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`)) %>%
-  group_by(`Income.classification`, `PRIMARY.WHO.Research.Priority.Area.Names`) %>%
-  summarise(Total_Amount_Awarded = sum(`Amount.Awarded`, na.rm = TRUE)) %>%
-  ungroup()
-
-# Manually break the text labels
-amount_by_focus <- amount_by_focus %>%
-  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = case_when(
-    `PRIMARY.WHO.Research.Priority.Area.Names` == "Animal and environmental research on the virus origin, and management measures at the human-animal interface" ~ "Animal and environmental research on the virus origin, \nand management measures at the human-animal interface",
-    `PRIMARY.WHO.Research.Priority.Area.Names` == "Infection prevention and control, including health care workers’ protection" ~ "Infection prevention and control, \nincluding health care workers’ protection",
-    `PRIMARY.WHO.Research.Priority.Area.Names` == "Virus: natural history, transmission and diagnostics" ~ "Virus: natural history, \ntransmission and diagnostics",
-    TRUE ~ `PRIMARY.WHO.Research.Priority.Area.Names`
-  ))
-
-# Reorder the factor levels to display N/A first
-amount_by_focus <- amount_by_focus %>%
-  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = fct_relevel(`PRIMARY.WHO.Research.Priority.Area.Names`, "N/A"))
-
-# Define custom colors for the income classifications
-custom_colors <- c("Only HIC" = "#6BAED6" , "Only LMIC" = "#A6CEE3", "Both HIC and LMIC" = "red")
-
-# Plot the amount awarded by research focus area and income classification
-ggplot(amount_by_focus, aes(x = `PRIMARY.WHO.Research.Priority.Area.Names`, y = Total_Amount_Awarded, fill = `Income.classification`)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label = scales::comma(Total_Amount_Awarded)), position = position_dodge(width = 0.9), hjust = -0.3, size = 5) +
-  labs(title = "", x = "", y = "") +
-  theme_minimal() +
-  theme(
-    axis.text.y = element_text(angle = 0, hjust = 1, size = 12, vjust = 0.5),
-    panel.grid.major.y = element_blank(),  # Remove major y gridlines
-    panel.grid.minor.y = element_blank(),  # Remove minor y gridlines
-    legend.position = "bottom",  # Place legend at the bottom
-    legend.title = element_blank()  # Remove the legend title
-  ) +
-  coord_flip() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +  # Ensure enough space for labels
-  scale_fill_manual(values = custom_colors)  # Apply custom colors
-
-## plot heatmap
-
-
-# Determine text color based on the value (set threshold to 35,000,000)
-amount_by_focus <- amount_by_focus %>%
-  mutate(text_color = ifelse(Total_Amount_Awarded > 35000000, "white", "black"))
-
-# Plot the heatmap for the amount awarded by research focus area and income classification
-ggplot(amount_by_focus, aes(x = `Income.classification`, y = `PRIMARY.WHO.Research.Priority.Area.Names`, fill = Total_Amount_Awarded)) +
-  geom_tile(color = "black", size = 0.3) +
-  geom_text(aes(label = paste0("$", scales::comma(Total_Amount_Awarded)), color = text_color), size = 7, fontface = "bold") +
-  scale_fill_gradient(low = "lightgrey", high = "black", na.value = "white",  guide = guide_colorbar(barwidth = 30)) +
-  scale_color_identity() +  # Use the colors specified in the dataframe
-  scale_x_discrete(position = "top") +  # Move x-axis labels to the top
-  labs(title = "", x = "", y = "", fill = "Amount Awarded") +
-  theme_minimal() +
-  theme(
-    axis.text.y = element_text(angle = 0, hjust = 1, size = 17, vjust = 0.5),
-    axis.text.x = element_text(size = 17, face = "bold", vjust = 1, hjust = 0.5),  # Adjust font size for x-axis labels and position them at the top
-    axis.title.x = element_blank(),  # Remove x-axis title
-    axis.ticks.x = element_blank(),  # Remove x-axis ticks
-    panel.grid.major = element_blank(),  # Remove major gridlines
-    panel.grid.minor = element_blank(),  # Remove minor gridlines
-    legend.position = "bottom",  # Place legend at the bottom
-    panel.border = element_rect(color = "black", fill = NA, size = 1)  # Add outer borders
-  ) +
-  scale_y_discrete(expand = expansion(mult = c(0, 0.1)))  # Ensure enough space for labels
-
-
-
-### Descriptive and statistical analysis of COVID-19 research funding sources
-
-## Number of research projects funded, number of countries where projects are being conducted and total amount mapped to funders
-
-# Function to format the amount
-
-format_amount <- function(amount) {
-  if (amount >= 1e9) {
-    formatted_amount <- paste0("$", format(round(amount / 1e9, 1), nsmall = 1), "b")
-  } else if (amount >= 1e6) {
-    formatted_amount <- paste0("$", format(round(amount / 1e6, 1), nsmall = 1), "m")
-  } else if (amount >= 1e5) {
-    formatted_amount <- paste0("$", round(amount / 1e3), "k")
-  } else {
-    formatted_amount <- paste0("$", round(amount))
-  }
-  return(formatted_amount)
-}
-
-# Map funders to no of countries funded
-
-PAHO_COVID_Projects1 <- PAHO_COVID_Projects %>%
-  # Split the 'Country/ countries research are being conducted' into multiple rows
-  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
-  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`)) 
-
-
-Funder_mapping_countries <- PAHO_COVID_Projects1 %>%
-  group_by(Funders) %>%
-  summarise(
-    No_of_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
-  )
-
-# Map funders to number of projects and total amount awarded 
-
-Funder_mapping_FA <- PAHO_COVID_Projects %>% group_by(Funders) %>%
-  summarise(
-    Total_Projects = n(),
-    Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE),
-  )
-
-
-# Format the Total_Amount_Awarded with commas
-Funder_mapping_xx <- Funder_mapping_FA %>%
-  mutate(
-    Total_Amount_Awarded = scales::comma(Total_Amount_Awarded) )
-
-# Join the two tables
-Funder_mapping_joined <- left_join(Funder_mapping_xx, Funder_mapping_countries, by = "Funders")
-
-
-# Apply the function to create a new formatted amount column
-Funder_mapping <- Funder_mapping_joined %>%
-  mutate(
-    Formatted_Amount_Awarded = sapply(Total_Amount_Awarded, function(x) {
-      amount <- as.numeric(gsub(",", "", x))
-      if (amount == 0) {
-        formatted_amount <- "N/A"
-      } else {
-        formatted_amount <- format_amount(amount)
-      }
-      return(formatted_amount)
-    }),
-    Funder_and_Amount = paste(Funders, " ", "(", Formatted_Amount_Awarded, ")", sep = "")
-  )
-  
-# Write the funder mapping to an Excel file
-write_xlsx(Funder_mapping, "Funder_mapping.xlsx")
-
-# Calculate the total amount from all funders
-total_amount_awarded <- PAHO_COVID_Projects %>%
-  summarise(Total_Amount = sum(Amount.Awarded, na.rm = TRUE))
-
-# Format the Total_Amount_Awarded with commas
-total_amount_awarded_format <- total_amount_awarded %>%
-  mutate(
-    Total_Amount = scales::comma(Total_Amount) )
-
-
-## Plotting funders to number of projects and countries (top 20)
-
-# Apply the function to create a new formatted amount column and sort by number of projects
-Funder_mapping_arranged <- Funder_mapping %>% arrange(desc(Total_Projects))  # Sort by Total_Projects in descending order
-  
-Funder_mapping_top_projects <- Funder_mapping_arranged %>% slice(1:20)  # Slice top 20 funders by projects
-
-# Reshape the data into long format
-Funder_mapping_plot_project <- Funder_mapping_top_projects %>%
-  pivot_longer(cols = c(Total_Projects, No_of_Countries), 
-               names_to = "Metric", 
-               values_to = "Value")
-
-
-# Ensure 'Total_Projects' comes before 'No_of_Countries' in the plot
-Funder_mapping_plot_project$Metric <- factor(Funder_mapping_plot_project$Metric, levels = c("Total_Projects", "No_of_Countries"))
-
-# Plot the bar chart
-ggplot(Funder_mapping_plot_project, aes(x = reorder(Funders, -Value), y = Value, fill = Metric)) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
-  geom_text(aes(label = Value), position = position_dodge(width = 0.9), vjust = -0.5, size = 5) +
-  labs(
-    x = "",
-    y = "",
-    fill = "") +
-  theme_minimal() +
-  theme(
-    panel.grid.major.x = element_blank(),  # Remove major vertical gridlines
-    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
-    panel.grid.major.y = element_line(color = "grey"),  # Ensure major horizontal gridlines are displayed
-    axis.text.y = element_blank(),
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 15, margin = margin(t = -5)),  # Increase font size and adjust margin
-    legend.position = "bottom",  # Place legend at the bottom
-    legend.text = element_text(size = 15)
-  ) +
-  scale_fill_manual(
-    name = "",  # Title of the legend
-    labels = c("Total Projects", "No of Countries"),  # Custom labels
-    values = c("Total_Projects" = "#1F78B4", "No_of_Countries" = "#A6CEE3")  # Custom colors
-  )
-
-
-## Plotting funders to amount awarded (top 20)
-
-# Apply the function to create a new formatted amount column and sort by number of projects
-Funder_mapping_amount_arranged <- Funder_mapping_FA %>% arrange(desc(Total_Amount_Awarded))  # Sort by amount in descending order
-
-# Format the Total_Amount_Awarded with commas
-Funder_mapping_AA_format <- Funder_mapping_amount_arranged %>%
-  mutate(
-    Total_Amount_Awarded = scales::comma(Total_Amount_Awarded) )
-
-Funder_mapping_top_amount <- Funder_mapping_AA_format %>% slice(1:20)  # Slice top 20 funders by amount
-
-# Step 4: Plot the bar graph using ggplot2
-ggplot(Funder_mapping_top_amount, aes(x = reorder(Funders, as.numeric(gsub(",", "", Total_Amount_Awarded))), y = as.numeric(gsub(",", "", Total_Amount_Awarded)))) +
-  geom_bar(stat = "identity", fill = "#1F78B4") +
-  geom_text(aes(label = Total_Amount_Awarded), vjust = -0.3, color = "black", size = 3.5) +  # Adjust vjust for vertical bars
-  labs(
-    x = "",
-    y = "",
-    title = ""
-  ) +
-  theme_minimal() +
-  theme(
-    panel.grid.major.x = element_blank(),  # Remove major vertical gridlines
-    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
-    panel.grid.major.y = element_line(color = "grey"),  # Ensure major horizontal gridlines are displayed
-    axis.text.x = element_text(angle = 90, hjust = 1, size = 12),  # Increase font size for x-axis labels and rotate them
-    axis.text.y = element_blank(),  # Increase font size for y-axis labels
-    legend.position = "none"  # Hide the legend
-  )
-
-## the big chart
-
-# Plot the bar chart of number of projects per funder
-ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
-  geom_bar(stat = "identity", fill = "#1F78B4") +
-  geom_text(aes(label = Total_Projects), hjust = -0.2, color = "black", size = 3) +
-  labs(
-       x = "",
-       y = "Number of Projects") +
-  theme_minimal() +
-  theme(panel.grid.major.y = element_blank(),
-        panel.grid.minor.y = element_blank(),
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
-
-# Plot the bar chart of number of projects per funder
-ggplot(Funder_mapping, aes(x = reorder(Funder_and_Amount, Total_Projects), y = Total_Projects)) +
-  geom_bar(stat = "identity", fill = "#1F78B4") +
-  geom_text(aes(label = Total_Projects), vjust = -1, hjust = 0.5, angle = 90, color = "black", size = 2) +
-  labs(
-    x = "",
-    y = "Number of Projects") +
-  theme_minimal() +
-  theme(
-    panel.grid.major.x = element_blank(),  # Remove major vertical gridlines
-    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, margin = margin(t = -10))
-  )
-
-## Classification of funders based on locations
-
-# Group the data by 'funder location' and count the number of distinct funders
-funder_countries <- PAHO_COVID_Projects %>%
-  group_by(`Funder.location`) %>%
-  summarise(Number_of_Funders = n_distinct(Funders, na.rm = TRUE))
-
-# Write the data frame to an Excel file
-write_xlsx(funder_countries, "funder_countries.xlsx")
-
-# Get world map data
-world_map <- map_data("world")
-
-# Rename the columns for merging
-funder_countries <- funder_countries %>%
-  rename(region = `Funder.location`)
-
-# Merge the map data with the funder data
-world_map_df <- left_join(world_map, funder_countries, by = "region")
-
-# Plot the map
-ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
-  geom_polygon(aes(fill = Number_of_Funders), color = "white") +
-  scale_fill_gradient(low = "lightblue", high = "#1F78B4", na.value = "gray90", name = "Number of Funders") +
-  labs(
-    title = "",
-    x = "",
-    y = ""
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text = element_blank(),
-    axis.title = element_blank(),
-    panel.grid = element_blank(),
-    panel.background = element_blank(),
-    legend.position = "bottom"  # Position the legend at the bottom
-  ) +
-  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5, direction = "horizontal"))
-  
-
-
-## Classification of funders to within and outside of PAHO, mapped to the number of projects and proportion of funding awarded
-
-Funder_location <- PAHO_COVID_Projects %>%
-  group_by(Location.classification) %>%
-  summarise(
-    Number_of_Funders = n_distinct(Funders),
-    Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE)
-  ) %>%
-  mutate(
-    Proportion_of_Total_Funds = Total_Amount_Awarded / sum(Total_Amount_Awarded)
-  )
-
-# Format the Total_Amount_Committed with percentage
-Funder_location <- Funder_location %>%
-  mutate(
-    Proportion_of_Total_Funds = scales::percent(Proportion_of_Total_Funds)
-  )
-
-# Apply the format_amount function to the Total_Amount_Awarded column
-Funder_location_formatted <- Funder_location %>%
-  mutate(
-    Total_Amount_Awarded = sapply(Total_Amount_Awarded, format_amount)
-  )
-
-# Write the data frame to an Excel file
-write_xlsx(Funder_location_formatted, "Funder_location_formatted.xlsx")
-
-
-# Conduct chisq-test
-chisq <- chisq.test(Funder_location$Total_Amount_Awarded)
-print(chisq)
-
-
-# Filter data by funder location classification
-within_paho <- PAHO_COVID_Projects %>%
-  filter(`Location.classification` == "Within PAHO")
-
-outside_paho <- PAHO_COVID_Projects %>%
-  filter(`Location.classification` == "Outside PAHO")
-
-# Function to summarize data by income classification
-summarize_by_income <- function(data, location) {
-  data %>%
-    group_by(`Income.classification`) %>%
-    summarise(
-      Funders = n_distinct(Funders),
-      Total_Awarded = sum(`Amount.Awarded`, na.rm = TRUE)
-    ) %>%
-    mutate(Location = location)
-}
-
-# Summarize data for both Within PAHO and Outside PAHO
-within_paho_summary <- summarize_by_income(within_paho, "Within PAHO")
-outside_paho_summary <- summarize_by_income(outside_paho, "Outside PAHO")
-
-# Combine the summaries
-combined_summary <- bind_rows(within_paho_summary, outside_paho_summary)
-
-
-
-
-
-## Funding landscape across member states
-
-# Descriptive analysis of number of research project conducted and total number of funders per member state
+### Descriptive analysis of research projects:number of research project conducted and total number of funders per member state
 
 PAHO_COVID_Projects2 <- PAHO_COVID_Projects %>%
-# Split the 'Country/ countries research are being conducted' into multiple rows
-separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
+  # Split the 'Country/ countries research are being conducted' into multiple rows
+  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
   mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`))
 
 # Analyze the number of projects and funders for each unique country
@@ -822,7 +80,7 @@ country_analysis2 <- PAHO_COVID_Projects2 %>%
   group_by(`Country/.countries.research.are.being.conducted`) %>%
   summarise(
     Total_Projects = n(),
-    ) %>%
+  ) %>%
   rename(Country = `Country/.countries.research.are.being.conducted`)
 
 country_analysis2 <- country_analysis2 %>%
@@ -835,6 +93,8 @@ country_analysis2 <- country_analysis2 %>%
 
 # Write the data frame to an Excel file
 write_xlsx(country_analysis2, "country_analysis2.xlsx")
+
+## Plotting number of research projects per country in a map chart
 
 # Define the regions of interest
 regions_of_interest <- c("USA", "Canada", "Mexico", "Guatemala", "Belize", "El Salvador", "Honduras", 
@@ -871,12 +131,61 @@ ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
   coord_fixed(xlim = c(-170, -30), ylim = c(-60, 90), ratio = 1.3)
 
 
+### Descriptive analysis of research projects: classification of number of countries and number of projects per income levels
+
+# Define unique income classifications
+
+income_classification_list <- list(
+  "High-income" = c("Anguilla", "Bermuda", "Canada", "USA", "Guyana", "Panama", "Chile", "Uruguay", 
+                    "Trinidad and Tobago", "Barbados", "Bahamas", "Saint Kitts and Nevis", 
+                    "Antigua and Barbuda", "Virgin Islands (british)", "Turks and Caicos Islands", 
+                    "Aruba", "Guadeloupe", "Cayman Islands", "Curaçao", "French Guiana", 
+                    "Martinique", "Montserrat", "Puerto Rico", "St. Maarten"),
+  
+  "Upper-middle" = c("Belize", "Dominican Republic", "Jamaica", "Suriname", "Colombia", 
+                     "Ecuador", "Peru", "Paraguay", "Mexico", "Argentina", 
+                     "Grenada", "Costa Rica", "Saint Lucia", "Saint Vincent and the Grenadines", 
+                     "Dominica", "Brazil", "Honduras", "Guatemala", "El Salvador", "Cuba"),
+  
+  "Lower-middle" = c("Venezuela", "Honduras", "Nicaragua", "Bolivia", "Haiti")
+)                 
+
+# Function to classify a country based on the predefined list
+classify_country <- function(country) {
+  for (income_class in names(income_classification_list)) {
+    if (country %in% income_classification_list[[income_class]]) {
+      return(income_class)
+    }
+  }
+  return(NA) # Return NA if the country is not found in the list
+}
 
 
+# Function to classify countries and count projects
+classify_and_count_projects <- function(PAHO_COVID_Projects_classify) {
+  # Split countries into individual rows
+  PAHO_COVID_Projects_classify <- PAHO_COVID_Projects %>%
+    separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
+    rename(Country = `Country/.countries.research.are.being.conducted`)
+  
+  # Classify each country
+  PAHO_COVID_Projects_classify <- PAHO_COVID_Projects_classify %>%
+    mutate(`Income Classification New` = sapply(Country, classify_country))
+  
+  # Count the number of projects per income classification
+  project_count <- PAHO_COVID_Projects_classify %>%
+    group_by(`Income Classification New`) %>%
+    summarise(Projects = n_distinct(`Unique.database.reference.number`))
+  
+  return(project_count)
+}
 
-#### Research question 2: To what extent did the COVID-19 research funding align with the established priorities?
 
-### Descriptive analysis of research projects alignment with WHO priority areas
+# Perform the classification and count
+project_count_by_income_2 <- classify_and_count_projects(PAHO_COVID_Projects_classify)
+
+
+### Descriptive analysis of research projects alignment with WHO priority and subpriority areas
 
 ## Assess alignment of research projects with WHO primary research priorities
 
@@ -1257,7 +566,7 @@ research_area_analysis <- research_areas_long %>%
 
 
 
-# Custom line breaks for each research area
+# Custom line breaks for research areas with long names
 custom_research_areas <- c(
   "Animal and environmental research on the virus origin, and management measures at the human-animal interface" = "Animal and environmental research on the virus origin, \nand management measures at the human-animal interface",
   "Infection prevention and control, including health care workers’ protection" = "Infection prevention and control, \nincluding health care workers’ protection",
@@ -1272,7 +581,6 @@ replace_research_areas <- function(area) {
     area
   }
 }
-
 
 
 
@@ -1342,3 +650,569 @@ ggplot(research_area_analysis_long, aes(x = `Research Areas`, y = `Amount Awarde
     y = ""
   ) +
   coord_flip(ylim = c(0, max(research_area_analysis_long$`Amount Awarded`) * 1.3))  # Flip coordinates and elongate bars
+
+
+
+
+#### Research question 2: What were the primary sources of funding for COVID-19 research conducted in the PAHO region?
+
+
+### Descriptive and statistical analysis of COVID-19 research funding sources
+
+## Number of research projects funded, number of countries where projects are being conducted and total amount mapped to funders
+
+# Function to format the amount
+
+format_amount <- function(amount) {
+  if (amount >= 1e9) {
+    formatted_amount <- paste0("$", format(round(amount / 1e9, 1), nsmall = 1), "b")
+  } else if (amount >= 1e6) {
+    formatted_amount <- paste0("$", format(round(amount / 1e6, 1), nsmall = 1), "m")
+  } else if (amount >= 1e5) {
+    formatted_amount <- paste0("$", round(amount / 1e3), "k")
+  } else {
+    formatted_amount <- paste0("$", round(amount))
+  }
+  return(formatted_amount)
+}
+
+# Map funders to no of countries funded
+
+PAHO_COVID_Projects1 <- PAHO_COVID_Projects %>%
+  # Split the 'Country/ countries research are being conducted' into multiple rows
+  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
+  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`)) 
+
+
+Funder_mapping_countries <- PAHO_COVID_Projects1 %>%
+  group_by(Funders) %>%
+  summarise(
+    No_of_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
+  )
+
+# Map funders to number of projects and total amount awarded 
+
+Funder_mapping_FA <- PAHO_COVID_Projects %>% group_by(Funders) %>%
+  summarise(
+    Total_Projects = n(),
+    Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE),
+  )
+
+
+# Format the Total_Amount_Awarded with commas
+Funder_mapping_xx <- Funder_mapping_FA %>%
+  mutate(
+    Total_Amount_Awarded = scales::comma(Total_Amount_Awarded) )
+
+# Join the two tables
+Funder_mapping_joined <- left_join(Funder_mapping_xx, Funder_mapping_countries, by = "Funders")
+
+
+# Apply the function to create a new formatted amount column
+Funder_mapping <- Funder_mapping_joined %>%
+  mutate(
+    Formatted_Amount_Awarded = sapply(Total_Amount_Awarded, function(x) {
+      amount <- as.numeric(gsub(",", "", x))
+      if (amount == 0) {
+        formatted_amount <- "N/A"
+      } else {
+        formatted_amount <- format_amount(amount)
+      }
+      return(formatted_amount)
+    }),
+    Funder_and_Amount = paste(Funders, " ", "(", Formatted_Amount_Awarded, ")", sep = "")
+  )
+
+# Write the funder mapping to an Excel file
+write_xlsx(Funder_mapping, "Funder_mapping.xlsx")
+
+# Calculate the total amount from all funders
+total_amount_awarded <- PAHO_COVID_Projects %>%
+  summarise(Total_Amount = sum(Amount.Awarded, na.rm = TRUE))
+
+# Format the Total_Amount_Awarded with commas
+total_amount_awarded_format <- total_amount_awarded %>%
+  mutate(
+    Total_Amount = scales::comma(Total_Amount) )
+
+
+## Plotting funders to number of projects and countries (top 20)
+
+# Apply the function to create a new formatted amount column and sort by number of projects
+Funder_mapping_arranged <- Funder_mapping %>% arrange(desc(Total_Projects))  # Sort by Total_Projects in descending order
+
+Funder_mapping_top_projects <- Funder_mapping_arranged %>% slice(1:20)  # Slice top 20 funders by projects
+
+# Reshape the data into long format
+Funder_mapping_plot_project <- Funder_mapping_top_projects %>%
+  pivot_longer(cols = c(Total_Projects, No_of_Countries), 
+               names_to = "Metric", 
+               values_to = "Value")
+
+
+# Ensure 'Total_Projects' comes before 'No_of_Countries' in the plot
+Funder_mapping_plot_project$Metric <- factor(Funder_mapping_plot_project$Metric, levels = c("Total_Projects", "No_of_Countries"))
+
+# Plot the bar chart
+ggplot(Funder_mapping_plot_project, aes(x = reorder(Funders, -Value), y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = Value), position = position_dodge(width = 0.9), vjust = -0.5, size = 5) +
+  labs(
+    x = "",
+    y = "",
+    fill = "") +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(),  # Remove major vertical gridlines
+    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
+    panel.grid.major.y = element_line(color = "grey"),  # Ensure major horizontal gridlines are displayed
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 15, margin = margin(t = -5)),  # Increase font size and adjust margin
+    legend.position = "bottom",  # Place legend at the bottom
+    legend.text = element_text(size = 15)
+  ) +
+  scale_fill_manual(
+    name = "",  # Title of the legend
+    labels = c("Total Projects", "No of Countries"),  # Custom labels
+    values = c("Total_Projects" = "#1F78B4", "No_of_Countries" = "#A6CEE3")  # Custom colors
+  )
+
+
+## Plotting funders to amount awarded (top 20)
+
+# Apply the function to create a new formatted amount column and sort by amount awarded per funder
+Funder_mapping_amount_arranged <- Funder_mapping_FA %>% arrange(desc(Total_Amount_Awarded))  # Sort by amount in descending order
+
+# Format the Total_Amount_Awarded with commas
+Funder_mapping_AA_format <- Funder_mapping_amount_arranged %>%
+  mutate(
+    Total_Amount_Awarded = scales::comma(Total_Amount_Awarded) )
+
+Funder_mapping_top_amount <- Funder_mapping_AA_format %>% slice(1:20)  # Slice top 20 funders by amount
+
+# Plot the bar graph using ggplot2
+ggplot(Funder_mapping_top_amount, aes(x = reorder(Funders, as.numeric(gsub(",", "", Total_Amount_Awarded))), y = as.numeric(gsub(",", "", Total_Amount_Awarded)))) +
+  geom_bar(stat = "identity", fill = "#1F78B4") +
+  geom_text(aes(label = Total_Amount_Awarded), vjust = -0.3, color = "black", size = 3.5) +  # Adjust vjust for vertical bars
+  labs(
+    x = "",
+    y = "",
+    title = ""
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(),  # Remove major vertical gridlines
+    panel.grid.minor.x = element_blank(),  # Remove minor vertical gridlines
+    panel.grid.major.y = element_line(color = "grey"),  # Ensure major horizontal gridlines are displayed
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 12),  # Increase font size for x-axis labels and rotate them
+    axis.text.y = element_blank(),  # Increase font size for y-axis labels
+    legend.position = "none"  # Hide the legend
+  )
+
+
+## Classification of funders based on funder locations
+
+# Group the data by 'funder location' and count the number of distinct funders
+funder_countries <- PAHO_COVID_Projects %>%
+  group_by(`Funder.location`) %>%
+  summarise(Number_of_Funders = n_distinct(Funders, na.rm = TRUE))
+
+# Write the data frame to an Excel file
+write_xlsx(funder_countries, "funder_countries.xlsx")
+
+# Get world map data
+world_map <- map_data("world")
+
+# Rename the columns for merging
+funder_countries <- funder_countries %>%
+  rename(region = `Funder.location`)
+
+# Merge the map data with the funder data
+world_map_df <- left_join(world_map, funder_countries, by = "region")
+
+# Plot the map to show distribution of funder locations
+ggplot(world_map_df, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = Number_of_Funders), color = "white") +
+  scale_fill_gradient(low = "lightblue", high = "#1F78B4", na.value = "gray90", name = "Number of Funders") +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    panel.background = element_blank(),
+    legend.position = "bottom"  # Position the legend at the bottom
+  ) +
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5, direction = "horizontal"))
+
+
+
+## Classification of funders to within and outside of PAHO, mapped to the number of projects and proportion of funding awarded
+
+Funder_location <- PAHO_COVID_Projects %>%
+  group_by(Location.classification) %>%
+  summarise(
+    Number_of_Funders = n_distinct(Funders),
+    Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE)
+  ) %>%
+  mutate(
+    Proportion_of_Total_Funds = Total_Amount_Awarded / sum(Total_Amount_Awarded)
+  )
+
+# Format the Total_Amount_Committed with percentage
+Funder_location <- Funder_location %>%
+  mutate(
+    Proportion_of_Total_Funds = scales::percent(Proportion_of_Total_Funds)
+  )
+
+# Apply the format_amount function to the Total_Amount_Awarded column
+Funder_location_formatted <- Funder_location %>%
+  mutate(
+    Total_Amount_Awarded = sapply(Total_Amount_Awarded, format_amount)
+  )
+
+# Write the data frame to an Excel file
+write_xlsx(Funder_location_formatted, "Funder_location_formatted.xlsx")
+
+
+
+#### Research question 3:How does the landscape of COVID-19 research funding in LMICs in the Americas compare to that of HICs in the region, in terms of funding sources and the focus areas of the research activities?
+
+### Descriptive analysis of the number & list of countries where research are being conducted classified to High and Low- or Middle- Income Countries
+
+# Define income classifications
+hic_countries <- c("Canada", "USA", "Guyana", "Panama", "Chile", "Uruguay", 
+                   "Trinidad and Tobago", "Barbados", "Bahamas", "Saint Kitts and Nevis", 
+                   "Antigua and Barbuda", "Virgin Islands (british)", "Turks and Caicos Islands", 
+                   "Aruba", "Guadeloupe", "Cayman Islands", "Curaçao", "French Guiana", 
+                   "Martinique", "Montserrat", "Puerto Rico", "St. Maarten")
+
+lmic_countries <- c("Belize", "Dominican Republic", "Jamaica", "Suriname", "Colombia", 
+                    "Ecuador", "Peru", "Paraguay", "Venezuela", "Mexico", "Argentina", 
+                    "Grenada", "Costa Rica", "Saint Lucia", "Saint Vincent and the Grenadines", 
+                    "Dominica", "Brazil", "Honduras", "Nicaragua", "Guatemala", "El Salvador", 
+                    "Bolivia", "Cuba", "Haiti")
+
+
+# Function to get the list of countries by income classification
+get_income_countries <- function(countries, income_list) {
+  country_list <- unlist(strsplit(countries, ","))
+  country_list <- trimws(country_list)
+  return(intersect(country_list, income_list))
+}
+
+# Separate the countries into HIC and LMIC
+Income_level_separated <- PAHO_COVID_Projects %>%
+  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
+  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`)) %>%
+  mutate(Income_Classification = case_when(
+    `Country/.countries.research.are.being.conducted` %in% hic_countries ~ "HIC",
+    `Country/.countries.research.are.being.conducted` %in% lmic_countries ~ "LMIC",
+    TRUE ~ NA_character_
+  ))
+
+# Summarize the data by income classification
+unique_countries <- Income_level_separated %>%
+  filter(!is.na(Income_Classification)) %>%
+  group_by(Income_Classification) %>%
+  summarise(
+    Number_of_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
+    List_of_Countries = paste(sort(unique(`Country/.countries.research.are.being.conducted`)), collapse = ", ")
+  ) %>%
+  ungroup()
+
+# Write the unique countries to an Excel file
+write_xlsx(unique_countries, "unique_countries.xlsx")
+
+# Rename columns
+colnames(unique_countries) <- c("Income Classification", "Number of Countries", "List of Countries")
+
+
+### Descriptive analysis of top funders of projects conducted in lmics
+
+# Separate the countries
+projects_long_lmic_funder <- PAHO_COVID_Projects %>%
+  separate_rows(`Country/.countries.research.are.being.conducted`, sep = ",") %>%
+  mutate(`Country/.countries.research.are.being.conducted` = trimws(`Country/.countries.research.are.being.conducted`))
+
+# Filter for LMIC countries
+lmic_projects <- projects_long_lmic_funder %>%
+  filter(`Country/.countries.research.are.being.conducted` %in% lmic_countries)
+
+# Aggregate the data to count the number of LMIC countries and the number of projects per funder
+funders_lmic_summary <- lmic_projects %>%
+  group_by(Funders) %>%
+  summarise(
+    Number_of_LMIC_Countries = n_distinct(`Country/.countries.research.are.being.conducted`),
+    Number_of_Projects = n_distinct(`Unique.database.reference.number`)
+  ) %>%
+  arrange(desc(Number_of_Projects))
+
+# Write the LMIC funders to an Excel file
+write_xlsx(funders_lmic_summary, "funders_lmic_summary.xlsx")
+
+# Get the top 20 funders
+top_20_funders <- funders_lmic_summary %>% slice(1:20)
+
+# Reshape the data for plotting
+top_20_funders_long <- top_20_funders %>%
+  pivot_longer(cols = c(Number_of_LMIC_Countries, Number_of_Projects), 
+               names_to = "Metric", 
+               values_to = "Value")
+
+# Plot the bar chart to map number of projects and number of lmics per funder (top 20 funders)
+ggplot(top_20_funders_long, aes(x = reorder(Funders, Value), y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = Value), position = position_dodge(width = 0.9), hjust = -0.3, size = 5, fontface = "bold") +
+  scale_fill_manual(values = c("Number_of_Projects" = "#1F78B4", "Number_of_LMIC_Countries" = "#A6CEE3"), 
+                    labels = c("Number_of_Projects" = "Number of Projects", "Number_of_LMIC_Countries" = "Number of Countries")) +
+  labs(
+    x = "",
+    y = "",
+    fill = ""
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),  # Remove major horizontal gridlines
+    panel.grid.minor.y = element_blank(),  # Remove minor horizontal gridlines
+    axis.text.x = element_text(size = 10),  # Increase font size for x-axis labels
+    axis.text.y = element_text(size = 12, face = "bold", margin = margin(r = 0.001)),  # Increase font size for y-axis labels
+    legend.position = "bottom",  # Place legend at the bottom
+  ) +
+  coord_flip()
+
+
+
+### Descriptive analysis of number of funder, research project, and total amount classified by income classification of locations
+
+# Count the number of projects by income classification
+Project_Income_classification <- PAHO_COVID_Projects %>%
+  group_by(`Income.classification`) %>%
+  summarise(Projects = n()) %>%
+  ungroup()
+
+# Calculate proportions
+Project_Income_classification <- Project_Income_classification %>%
+  mutate(Proportion = Projects / sum(Projects))
+
+# Format the proportions to percentage
+Project_Income_classification <- Project_Income_classification %>%
+  mutate(
+    Proportion = scales::percent(Proportion, accuracy = 0.1)
+  )
+
+
+# Perform chi-squared test to check for statistical significance between HIC and Not-HIC projects
+chisq_test <- chisq.test(Project_Income_classification$Projects)
+print(chisq_test)
+
+
+
+# Disaggregate by number of funders and amount awarded per income classification
+funders_per_income_classification_1 <- PAHO_COVID_Projects %>%
+  group_by(`Income.classification`) %>%
+  summarise(
+    Funders = n_distinct(Funders),
+    Total_Amount_Awarded = sum(Amount.Awarded, na.rm = TRUE))%>%
+  mutate(
+    Proportion_of_Total_Funds = Total_Amount_Awarded / sum(Total_Amount_Awarded)
+  ) %>%
+  mutate(
+    Proportion_of_Total_Funds = scales::percent(Proportion_of_Total_Funds)
+  )
+
+
+
+## plot bar graph of number of projects and number of funders per income level
+
+Analysis_for_plot <- full_join(funders_per_income_classification_1, Project_Income_classification, by = "Income.classification")
+
+
+# Select only the necessary columns for plotting
+final_table <- Analysis_for_plot %>%
+  select(`Income.classification`, Funders, Projects)
+
+# Reshape the data to long format
+final_table_long <- final_table %>%
+  pivot_longer(cols = c(Funders, Projects), names_to = "Metric", values_to = "Count")
+
+# Reorder the Income.classification factor based on Projects in descending order
+final_table_long <- final_table_long %>%
+  group_by(`Income.classification`) %>%
+  mutate(Max_Projects = max(Count[Metric == "Projects"])) %>%
+  ungroup() %>%
+  mutate(`Income.classification` = fct_reorder(`Income.classification`, -Max_Projects)) %>%
+  select(-Max_Projects)
+
+# Adjust the order of the Metric factor to ensure Projects are on the left
+final_table_long$Metric <- factor(final_table_long$Metric, levels = c("Projects", "Funders"))
+
+# Plot the bar chart
+ggplot(final_table_long, aes(x = `Income.classification`, y = Count, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7), width = 0.5) +  # Adjust the width of the bars
+  geom_text(aes(label = Count), position = position_dodge(width = 0.7), vjust = -0.5, size = 5, fontface = "bold") +  # Bolden the text
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(), # Remove major y gridlines
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 360, hjust = 0.5, size = 15, face = "bold"),  # Bolden the x-axis labels and center them
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid = element_blank(), # Ensure all gridlines are removed
+    axis.line.y = element_line(color = "grey"), # Add a line for the y-axis
+    legend.position = "bottom"
+  ) +
+  scale_fill_manual(values = c("Projects" = "#1F78B4", "Funders" = "skyblue"), 
+                    labels = c("Projects" = "Number of projects", "Funders" = "Number of funders"),  # Change legend names
+                    name = "") +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
+
+
+
+## plot bar graph of amount awarded per income level
+
+# Select only the columns needed for plotting
+funding_allocation <- funders_per_income_classification_1 %>%
+  select(`Income.classification`, Total_Amount_Awarded, Proportion_of_Total_Funds)
+
+# Reorder the Income.classification factor based on amount in descending order
+funding_allocation <- funding_allocation %>%
+  mutate(`Income.classification` = fct_reorder(`Income.classification`, Total_Amount_Awarded))
+
+
+# Plot the bar chart
+ggplot(funding_allocation, aes(x = `Income.classification`, y = Total_Amount_Awarded, label = paste0(Total_Amount_Awarded, " (", Proportion_of_Total_Funds, ")"))) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black", width = 0.5) +  # Reduce the width of the bars
+  geom_text(aes(label = paste0(scales::comma(Total_Amount_Awarded), " (", Proportion_of_Total_Funds, ")")), vjust = -0.5, size = 5, fontface = "bold") +  # Bolden the text
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(), # Remove major y gridlines
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 360, hjust = 0.5, size = 12, face = "bold"),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid = element_blank(), # Ensure all gridlines are removed
+    axis.line.y = element_line(color = "grey") # Add a line for the y-axis
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title = "",
+    x = "",
+    y = ""
+  ) +
+  geom_hline(yintercept = 0, color = "grey") # Add a single horizontal line at the base of the bars
+
+
+
+### map projects to WHO priority areas across income levels
+
+# Group by income classification and research focus area, then count the number of projects
+projects_by_focus <- PAHO_COVID_Projects %>%
+  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`)) %>%
+  group_by(`Income.classification`, `PRIMARY.WHO.Research.Priority.Area.Names`) %>%
+  summarise(Number_of_Projects = n()) %>%
+  ungroup()
+
+
+# Manually break the text labels for areas with long names
+projects_by_focus <- projects_by_focus %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = case_when(
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Animal and environmental research on the virus origin, and management measures at the human-animal interface" ~ "Animal and environmental research on the virus origin, \nand management measures at the human-animal interface",
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Infection prevention and control, including health care workers’ protection" ~ "Infection prevention and control, \nincluding health care workers’ protection",
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Virus: natural history, transmission and diagnostics" ~ "Virus: natural history, \ntransmission and diagnostics",
+    TRUE ~ `PRIMARY.WHO.Research.Priority.Area.Names`
+  ))
+
+
+# Reorder the factor levels to display N/A first
+projects_by_focus <- projects_by_focus %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = fct_relevel(`PRIMARY.WHO.Research.Priority.Area.Names`, "N/A"))
+
+
+# Define custom colors for the income classifications
+custom_colors <- c("Only HIC" = "#1F78B4" , "Only LMIC" = "#A6CEE3", "Both HIC and LMIC" = "red")
+
+# Plot the number of projects by research focus area and income classification
+ggplot(projects_by_focus, aes(x = `PRIMARY.WHO.Research.Priority.Area.Names`, y = Number_of_Projects, fill = `Income.classification`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = Number_of_Projects), position = position_dodge(width = 0.9), hjust = -0.3, size = 5) +
+  labs(title = "", x = "", y = "") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(angle = 0, hjust = 1, size = 15, vjust = 0.5),
+    panel.grid.major.y = element_blank(),  # Remove major y gridlines
+    panel.grid.minor.y = element_blank(),  # Remove minor y gridlines
+    legend.position = "bottom",  # Place legend at the bottom
+    legend.title = element_blank()  # Remove the legend title
+  ) +
+  coord_flip() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +  # Ensure enough space for labels
+  scale_fill_manual(values = custom_colors)  # Apply custom colors
+
+
+### map amount awarded to priority areas across income levels
+
+# Group by income classification and research focus area, then sum the amount awarded
+amount_by_focus <- PAHO_COVID_Projects %>%
+  separate_rows(`PRIMARY.WHO.Research.Priority.Area.Names`, sep = ";") %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = trimws(`PRIMARY.WHO.Research.Priority.Area.Names`)) %>%
+  group_by(`Income.classification`, `PRIMARY.WHO.Research.Priority.Area.Names`) %>%
+  summarise(Total_Amount_Awarded = sum(`Amount.Awarded`, na.rm = TRUE)) %>%
+  ungroup()
+
+# Manually break the text labels for areas with long names
+amount_by_focus <- amount_by_focus %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = case_when(
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Animal and environmental research on the virus origin, and management measures at the human-animal interface" ~ "Animal and environmental research on the virus origin, \nand management measures at the human-animal interface",
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Infection prevention and control, including health care workers’ protection" ~ "Infection prevention and control, \nincluding health care workers’ protection",
+    `PRIMARY.WHO.Research.Priority.Area.Names` == "Virus: natural history, transmission and diagnostics" ~ "Virus: natural history, \ntransmission and diagnostics",
+    TRUE ~ `PRIMARY.WHO.Research.Priority.Area.Names`
+  ))
+
+# Reorder the factor levels to display N/A first
+amount_by_focus <- amount_by_focus %>%
+  mutate(`PRIMARY.WHO.Research.Priority.Area.Names` = fct_relevel(`PRIMARY.WHO.Research.Priority.Area.Names`, "N/A"))
+
+
+## plot heatmap
+
+
+# Determine text color based on the value (set threshold to 35,000,000)
+amount_by_focus <- amount_by_focus %>%
+  mutate(text_color = ifelse(Total_Amount_Awarded > 35000000, "white", "black"))
+
+# Plot the heatmap for the amount awarded by research focus area and income classification
+ggplot(amount_by_focus, aes(x = `Income.classification`, y = `PRIMARY.WHO.Research.Priority.Area.Names`, fill = Total_Amount_Awarded)) +
+  geom_tile(color = "black", size = 0.3) +
+  geom_text(aes(label = paste0("$", scales::comma(Total_Amount_Awarded)), color = text_color), size = 7, fontface = "bold") +
+  scale_fill_gradient(low = "lightgrey", high = "black", na.value = "white",  guide = guide_colorbar(barwidth = 30)) +
+  scale_color_identity() +  # Use the colors specified in the dataframe
+  scale_x_discrete(position = "top") +  # Move x-axis labels to the top
+  labs(title = "", x = "", y = "", fill = "Amount Awarded") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(angle = 0, hjust = 1, size = 17, vjust = 0.5),
+    axis.text.x = element_text(size = 17, face = "bold", vjust = 1, hjust = 0.5),  # Adjust font size for x-axis labels and position them at the top
+    axis.title.x = element_blank(),  # Remove x-axis title
+    axis.ticks.x = element_blank(),  # Remove x-axis ticks
+    panel.grid.major = element_blank(),  # Remove major gridlines
+    panel.grid.minor = element_blank(),  # Remove minor gridlines
+    legend.position = "bottom",  # Place legend at the bottom
+    panel.border = element_rect(color = "black", fill = NA, size = 1)  # Add outer borders
+  ) +
+  scale_y_discrete(expand = expansion(mult = c(0, 0.1)))  # Ensure enough space for labels
