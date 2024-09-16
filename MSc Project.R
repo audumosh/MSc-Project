@@ -180,7 +180,8 @@ funders_lmic_summary <- lmic_projects %>%
   ) %>%
   arrange(desc(Number_of_Projects))
 
-
+# Write the LMIC funders to an Excel file
+write_xlsx(funders_lmic_summary, "funders_lmic_summary.xlsx")
 
 # Get the top 20 funders
 top_20_funders <- funders_lmic_summary %>% slice(1:20)
@@ -577,6 +578,9 @@ Funder_mapping <- Funder_mapping_joined %>%
     Funder_and_Amount = paste(Funders, " ", "(", Formatted_Amount_Awarded, ")", sep = "")
   )
   
+# Write the funder mapping to an Excel file
+write_xlsx(Funder_mapping, "Funder_mapping.xlsx")
+
 # Calculate the total amount from all funders
 total_amount_awarded <- PAHO_COVID_Projects %>%
   summarise(Total_Amount = sum(Amount.Awarded, na.rm = TRUE))
